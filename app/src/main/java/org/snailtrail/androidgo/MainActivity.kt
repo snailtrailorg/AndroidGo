@@ -59,7 +59,6 @@ import org.snailtrail.androidgo.game.SgfConstants
 import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
-import org.snailtrail.androidgo.game.findConnectedGroup
 import org.snailtrail.androidgo.game.gtpToBoardPos
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
@@ -130,8 +129,6 @@ class MainActivity : ComponentActivity() {
         var showAboutDialog by remember { mutableStateOf(false) }
         var showScore by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
-        var showEndGameDialog by remember { mutableStateOf(false) }
-        var manualDeadStones by remember { mutableStateOf<Set<Pair<Int, Int>>>(emptySet()) }
 
         // Page state
         var currentPage by remember { mutableStateOf<Page>(Page.Game) }
@@ -185,18 +182,6 @@ class MainActivity : ComponentActivity() {
                             GoBoardScreen(
                                 boardState = boardState,
                                 onCellClick = { row, col ->
-                                    // End-game dead stone toggling — toggle entire group
-                                    if (showEndGameDialog) {
-                                        val pos = row to col
-                                        val color = boardState.stones[pos] ?: return@GoBoardScreen
-                                        val group = findConnectedGroup(boardState.stones, pos, color, boardState.size)
-                                        val allDead = group.all { it in manualDeadStones }
-                                        manualDeadStones = if (allDead)
-                                            manualDeadStones - group
-                                        else manualDeadStones + group
-                                        currentScore = goGame.countTerritory(manualDeadStones)
-                                        return@GoBoardScreen
-                                    }
                                     if (aiThinking) {
                                         engineManager.getEngine()?.interrupt()
                                         return@GoBoardScreen
@@ -228,7 +213,6 @@ class MainActivity : ComponentActivity() {
                             gameOver = boardState.gameOver,
                             aiThinking = aiThinking,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
-                            markingDead = showEndGameDialog,
                             onPass = {
                                 if (aiThinking) {
                                     // Just interrupt — the running genmove will return naturally
@@ -268,25 +252,17 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onEnd = {
-                                if (showEndGameDialog) {
-                                    // Confirm end: finalize score
-                                    showEndGameDialog = false
-                                } else {
+                                goGame.pass()
+                                if (!goGame.state.value.gameOver) {
                                     goGame.pass()
-                                    showScore = false
-                                    if (!goGame.state.value.gameOver) {
-                                        goGame.pass()
-                                    }
-                                    if (goGame.state.value.gameOver) {
-                                        lifecycleScope.launch(Dispatchers.IO) {
-                                            val engine = engineManager.getEngine()
-                                            val dead = engine?.getDeadStones() ?: emptySet()
-                                            withContext(Dispatchers.Main) {
-                                                manualDeadStones = dead
-                                                currentScore = goGame.countTerritory(dead)
-                                                showScore = true
-                                                showEndGameDialog = true
-                                            }
+                                }
+                                if (goGame.state.value.gameOver) {
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        val engine = engineManager.getEngine()
+                                        val dead = engine?.getDeadStones() ?: emptySet()
+                                        withContext(Dispatchers.Main) {
+                                            currentScore = goGame.countTerritory(dead)
+                                            showScore = true
                                         }
                                     }
                                 }
@@ -712,7 +688,6 @@ private fun BottomBar(
     gameOver: Boolean,
     aiThinking: Boolean,
     hasMoves: Boolean,
-    markingDead: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -746,10 +721,10 @@ private fun BottomBar(
             contentPadding = ButtonDefaults.TextButtonContentPadding
         ) { Text(stringResource(R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onEnd, enabled = !gameOver || markingDead,
+            onClick = onEnd, enabled = !gameOver,
             modifier = Modifier.weight(1f),
             contentPadding = ButtonDefaults.TextButtonContentPadding
-        ) { Text(stringResource(if (markingDead) R.string.end_game_confirm else R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
+        ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
     }
 }
 
