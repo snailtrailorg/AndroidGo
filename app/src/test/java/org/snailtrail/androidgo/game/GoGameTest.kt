@@ -193,14 +193,16 @@ class GoGameTest {
         assertEquals(6.5f, score.whiteScore)
     }
 
-    @Test fun `dead stones excluded from score`() {
+    @Test fun `dead stone excluded from stone count`() {
         val game = GoGame(9)
-        game.placeStone(4, 4) // B
-        game.pass()
-        game.pass()
-        val score = game.countTerritory(setOf(4 to 4))
-        // Black stone at (4,4) treated as dead → 0 black stones
-        assertEquals(0, score.blackStones)
+        game.placeStone(0, 0); game.placeStone(0, 1)  // B, W
+        game.placeStone(1, 0); game.placeStone(0, 2)  // B, W
+        game.placeStone(2, 0)                          // B
+        game.pass(); game.pass()
+        val score = game.countTerritory(setOf(0 to 1))
+        // Dead white (0,1) excluded: only (0,2) alive = 1 white stone
+        assertEquals(1, score.whiteStones)
+        assertEquals(3, score.blackStones)
     }
 
     // --- 重置 ---
