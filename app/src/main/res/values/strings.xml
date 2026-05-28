@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AndroidGo</string>
+
+    <!-- Title Bar -->
+    <string name="menu_new_game">New Game</string>
+    <string name="menu_load">Load</string>
+    <string name="menu_save">Save</string>
+    <string name="menu_history">History</string>
+    <string name="menu_about">About</string>
+
+    <!-- Game Info Bar -->
+    <string name="game_over">Game Over</string>
+    <string name="ai_thinking">Thinking…</string>
+    <string name="move_count">Move %1$d</string>
+
+    <!-- Bottom Bar -->
+    <string name="btn_interrupt">Stop</string>
+    <string name="btn_pass">Pass</string>
+    <string name="btn_undo">Undo</string>
+    <string name="btn_redo">Redo</string>
+    <string name="btn_score">Score</string>
+    <string name="btn_end">End</string>
+
+    <!-- Score Card -->
+    <string name="score_black">B %1$s: %2$d stones + %3$d area = %4$s</string>
+    <string name="score_white">W %1$s: %2$d stones + %3$d area + %4$s komi = %5$s</string>
+    <string name="score_black_leads">Black %1$s leads by %2$s</string>
+    <string name="score_white_leads">White %1$s leads by %2$s</string>
+    <string name="score_draw">Draw</string>
+
+    <!-- About Dialog -->
+    <string name="about_title">About AndroidGo</string>
+    <string name="about_version">Version 1.0</string>
+    <string name="about_desc">Android Go app powered by Jetpack Compose</string>
+    <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
+    <string name="about_copyright">© 2026 snailtrail.org — All rights reserved.</string>
+    <string name="about_close">Close</string>
+
+    <!-- New Game Dialog -->
+    <string name="new_game_title">New Game</string>
+    <string name="board_size_label">Board Size</string>
+    <string name="board_size_9">9×9</string>
+    <string name="board_size_13">13×13</string>
+    <string name="board_size_19">19×19</string>
+    <string name="komi_label">Komi</string>
+    <string name="komi_unit">%1$s</string>
+    <string name="handicap_label">Handicap</string>
+    <string name="handicap_none">None</string>
+    <string name="handicap_count">%1$d</string>
+    <string name="player_info_label">Players</string>
+    <string name="black_label">Black</string>
+    <string name="white_label">White</string>
+    <string name="role_human">Human</string>
+    <string name="role_ai">AI</string>
+    <string name="name_label">Name</string>
+    <string name="engine_label">Engine</string>
+    <string name="difficulty_label">Level</string>
+    <string name="difficulty_gnugo">%1$d</string>
+    <string name="difficulty_katago">Lv %1$d</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_start">Start</string>
+    <string name="default_black_name">Black</string>
+    <string name="default_white_name">White</string>
+
+    <!-- History Screen -->
+    <string name="history_title">Game History</string>
+    <string name="history_empty">No saved games</string>
+    <string name="history_board_size">%1$d×%1$d</string>
+    <string name="history_moves">%1$d moves</string>
+    <string name="history_entry_desc">%1$s · %2$s</string>
+    <string name="history_load">Load</string>
+    <string name="history_review">Review</string>
+    <string name="history_back">Back</string>
+    <string name="review_back">Back to List</string>
+    <string name="review_move">Move %1$d/%2$d</string>
+    <string name="review_load">Load to Board</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_loaded">Loaded %1$s</string>
+    <string name="toast_saved">Saved: %1$s</string>
+    <string name="toast_save_failed">Save failed: %1$s</string>
+    <string name="toast_ai_error">AI error: %1$s</string>
+    <string name="toast_ai_start_failed">AI engine start failed: %1$s</string>
+    <string name="toast_ai_not_ready">AI engine not ready</string>
+
+    <!-- Error Messages -->
+    <string name="error_engine_closed">Engine is closed</string>
+    <string name="error_init_timeout">AI engine init timeout</string>
+</resources>

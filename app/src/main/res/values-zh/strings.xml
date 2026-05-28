@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">安卓围棋</string>
+
+    <!-- Title Bar -->
+    <string name="menu_new_game">新局</string>
+    <string name="menu_load">加载</string>
+    <string name="menu_save">保存</string>
+    <string name="menu_history">历史对局</string>
+    <string name="menu_about">关于</string>
+
+    <!-- Game Info Bar -->
+    <string name="game_over">终局</string>
+    <string name="ai_thinking">思考中…</string>
+    <string name="move_count">第%1$d手</string>
+
+    <!-- Bottom Bar -->
+    <string name="btn_interrupt">中断</string>
+    <string name="btn_pass">过一手</string>
+    <string name="btn_undo">悔棋</string>
+    <string name="btn_redo">恢复</string>
+    <string name="btn_score">点目</string>
+    <string name="btn_end">结束</string>
+
+    <!-- Score Card -->
+    <string name="score_black">黑 %1$s: %2$d子 + %3$d空 = %4$s</string>
+    <string name="score_white">白 %1$s: %2$d子 + %3$d空 + %4$s贴 = %5$s</string>
+    <string name="score_black_leads">黑 %1$s 领先 %2$s</string>
+    <string name="score_white_leads">白 %1$s 领先 %2$s</string>
+    <string name="score_draw">平局</string>
+
+    <!-- About Dialog -->
+    <string name="about_title">关于 AndroidGo</string>
+    <string name="about_version">版本 1.0</string>
+    <string name="about_desc">Android 围棋应用 · Jetpack Compose</string>
+    <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
+    <string name="about_copyright">© 2026 snailtrail.org — 保留所有权利。</string>
+    <string name="about_close">关闭</string>
+
+    <!-- New Game Dialog -->
+    <string name="new_game_title">新局设置</string>
+    <string name="board_size_label">棋盘大小</string>
+    <string name="board_size_9">9路</string>
+    <string name="board_size_13">13路</string>
+    <string name="board_size_19">19路</string>
+    <string name="komi_label">贴目</string>
+    <string name="komi_unit">%1$s目</string>
+    <string name="handicap_label">让子</string>
+    <string name="handicap_none">无</string>
+    <string name="handicap_count">%1$d子</string>
+    <string name="player_info_label">对战信息</string>
+    <string name="black_label">黑方</string>
+    <string name="white_label">白方</string>
+    <string name="role_human">用户</string>
+    <string name="role_ai">AI</string>
+    <string name="name_label">名称</string>
+    <string name="engine_label">引擎</string>
+    <string name="difficulty_label">难度</string>
+    <string name="difficulty_gnugo">级别 %1$d</string>
+    <string name="difficulty_katago">%1$d档</string>
+    <string name="btn_cancel">取消</string>
+    <string name="btn_start">开始</string>
+    <string name="default_black_name">黑方</string>
+    <string name="default_white_name">白方</string>
+
+    <!-- History Screen -->
+    <string name="history_title">历史对局</string>
+    <string name="history_empty">暂无保存的棋谱</string>
+    <string name="history_board_size">%1$d路</string>
+    <string name="history_moves">%1$d手</string>
+    <string name="history_entry_desc">%1$s · %2$s</string>
+    <string name="history_load">加载</string>
+    <string name="history_review">复盘</string>
+    <string name="history_back">返回</string>
+    <string name="review_back">返回列表</string>
+    <string name="review_move">第 %1$d/%2$d 手</string>
+    <string name="review_load">加载到棋盘</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_loaded">已加载 %1$s</string>
+    <string name="toast_saved">已保存: %1$s</string>
+    <string name="toast_save_failed">保存失败: %1$s</string>
+    <string name="toast_ai_error">AI错误: %1$s</string>
+    <string name="toast_ai_start_failed">AI引擎启动失败: %1$s</string>
+    <string name="toast_ai_not_ready">AI引擎未启动</string>
+
+    <!-- Error Messages -->
+    <string name="error_engine_closed">Engine is closed</string>
+    <string name="error_init_timeout">AI引擎初始化超时</string>
+</resources>
