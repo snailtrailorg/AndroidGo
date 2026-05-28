@@ -226,6 +226,7 @@ class MainActivity : ComponentActivity() {
                             gameOver = boardState.gameOver,
                             aiThinking = aiThinking,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
+                            markingDead = showEndGameDialog,
                             onPass = {
                                 if (aiThinking) {
                                     // Just interrupt — the running genmove will return naturally
@@ -265,20 +266,25 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onEnd = {
-                                goGame.pass()
-                                showScore = false
-                                if (!goGame.state.value.gameOver) {
+                                if (showEndGameDialog) {
+                                    // Confirm end: finalize score
+                                    showEndGameDialog = false
+                                } else {
                                     goGame.pass()
-                                }
-                                if (goGame.state.value.gameOver) {
-                                    lifecycleScope.launch(Dispatchers.IO) {
-                                        val engine = engineManager.getEngine()
-                                        val dead = engine?.getDeadStones() ?: emptySet()
-                                        withContext(Dispatchers.Main) {
-                                            manualDeadStones = dead
-                                            currentScore = goGame.countTerritory(dead)
-                                            showScore = true
-                                            showEndGameDialog = true
+                                    showScore = false
+                                    if (!goGame.state.value.gameOver) {
+                                        goGame.pass()
+                                    }
+                                    if (goGame.state.value.gameOver) {
+                                        lifecycleScope.launch(Dispatchers.IO) {
+                                            val engine = engineManager.getEngine()
+                                            val dead = engine?.getDeadStones() ?: emptySet()
+                                            withContext(Dispatchers.Main) {
+                                                manualDeadStones = dead
+                                                currentScore = goGame.countTerritory(dead)
+                                                showScore = true
+                                                showEndGameDialog = true
+                                            }
                                         }
                                     }
                                 }
@@ -356,19 +362,6 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
-        }
-
-        if (showEndGameDialog) {
-            EndGameDialog(
-                onConfirm = {
-                    showEndGameDialog = false
-                },
-                onDismiss = {
-                    showEndGameDialog = false
-                    showScore = false
-                    manualDeadStones = emptySet()
-                }
-            )
         }
 
         if (showAboutDialog) {
@@ -717,6 +710,7 @@ private fun BottomBar(
     gameOver: Boolean,
     aiThinking: Boolean,
     hasMoves: Boolean,
+    markingDead: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -750,10 +744,10 @@ private fun BottomBar(
             contentPadding = ButtonDefaults.TextButtonContentPadding
         ) { Text(stringResource(R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onEnd, enabled = !gameOver,
+            onClick = onEnd, enabled = !gameOver || markingDead,
             modifier = Modifier.weight(1f),
             contentPadding = ButtonDefaults.TextButtonContentPadding
-        ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
+        ) { Text(stringResource(if (markingDead) R.string.end_game_confirm else R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
     }
 }
 
@@ -798,30 +792,6 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
 
 private fun fmtScore(f: Float): String =
     if (f == f.toLong().toFloat()) "${f.toInt()}" else String.format("%.1f", f)
-
-// ── End Game dialog ──
-
-@Composable
-private fun EndGameDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.end_game_title)) },
-        text = { Text(stringResource(R.string.end_game_msg)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(R.string.end_game_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.end_game_cancel))
-            }
-        }
-    )
-}
 
 // ── About dialog ──
 
