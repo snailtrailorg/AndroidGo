@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
         var aiThinking by remember { mutableStateOf(false) }
         var initialAiTriggered by remember { mutableStateOf(false) }
 
-        // Trigger initial AI move if AI plays first (e.g. loaded from saved prefs)
+        // Trigger initial AI move if AI plays first
         LaunchedEffect(Unit) {
             if (!initialAiTriggered) {
                 initialAiTriggered = true
@@ -124,6 +124,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
         var showNewGameDialog by remember { mutableStateOf(false) }
         var showAboutDialog by remember { mutableStateOf(false) }
         var showScore by remember { mutableStateOf(false) }
