@@ -59,6 +59,7 @@ import org.snailtrail.androidgo.game.SgfConstants
 import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
+import org.snailtrail.androidgo.game.findConnectedGroup
 import org.snailtrail.androidgo.game.gtpToBoardPos
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
@@ -184,15 +185,16 @@ class MainActivity : ComponentActivity() {
                             GoBoardScreen(
                                 boardState = boardState,
                                 onCellClick = { row, col ->
-                                    // End-game dead stone toggling
+                                    // End-game dead stone toggling — toggle entire group
                                     if (showEndGameDialog) {
                                         val pos = row to col
-                                        if (boardState.stones.containsKey(pos)) {
-                                            manualDeadStones = if (pos in manualDeadStones)
-                                                manualDeadStones - pos
-                                            else manualDeadStones + pos
-                                            currentScore = goGame.countTerritory(manualDeadStones)
-                                        }
+                                        val color = boardState.stones[pos] ?: return@GoBoardScreen
+                                        val group = findConnectedGroup(boardState.stones, pos, color, boardState.size)
+                                        val allDead = group.all { it in manualDeadStones }
+                                        manualDeadStones = if (allDead)
+                                            manualDeadStones - group
+                                        else manualDeadStones + group
+                                        currentScore = goGame.countTerritory(manualDeadStones)
                                         return@GoBoardScreen
                                     }
                                     if (aiThinking) {

@@ -41,6 +41,33 @@ fun gtpToBoardPos(coord: String, boardSize: Int): Pair<Int, Int> {
     return row to col
 }
 
+/** Find all stones connected to (row, col) of the same color. */
+fun findConnectedGroup(
+    stones: Map<Pair<Int, Int>, StoneColor>,
+    start: Pair<Int, Int>,
+    color: StoneColor,
+    boardSize: Int
+): Set<Pair<Int, Int>> {
+    val group = mutableSetOf<Pair<Int, Int>>()
+    val queue = ArrayDeque<Pair<Int, Int>>()
+    queue.add(start)
+    group.add(start)
+    val dirs = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
+    while (queue.isNotEmpty()) {
+        val (r, c) = queue.removeFirst()
+        for ((dr, dc) in dirs) {
+            val nr = r + dr; val nc = c + dc
+            val np = nr to nc
+            if (nr in 0 until boardSize && nc in 0 until boardSize
+                && stones[np] == color && np !in group) {
+                group.add(np)
+                queue.add(np)
+            }
+        }
+    }
+    return group
+}
+
 /** Convert board (row, col) to GTP coordinate string. */
 fun boardPosToGtp(row: Int, col: Int, boardSize: Int): String {
     var c = 'A' + col
