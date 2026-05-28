@@ -144,6 +144,20 @@ class MainActivity : ComponentActivity() {
             (boardState.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
         )
 
+        // Auto-show score when game ends
+        LaunchedEffect(boardState.gameOver) {
+            if (boardState.gameOver) {
+                withContext(Dispatchers.IO) {
+                    val engine = engineManager.getEngine()
+                    val dead = engine?.getDeadStones() ?: emptySet()
+                    withContext(Dispatchers.Main) {
+                        currentScore = goGame.countTerritory(dead)
+                        showScore = true
+                    }
+                }
+            }
+        }
+
         when (currentPage) {
             Page.Game -> {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -255,16 +269,6 @@ class MainActivity : ComponentActivity() {
                                 goGame.pass()
                                 if (!goGame.state.value.gameOver) {
                                     goGame.pass()
-                                }
-                                if (goGame.state.value.gameOver) {
-                                    lifecycleScope.launch(Dispatchers.IO) {
-                                        val engine = engineManager.getEngine()
-                                        val dead = engine?.getDeadStones() ?: emptySet()
-                                        withContext(Dispatchers.Main) {
-                                            currentScore = goGame.countTerritory(dead)
-                                            showScore = true
-                                        }
-                                    }
                                 }
                             }
                         )
