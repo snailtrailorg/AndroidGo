@@ -25,21 +25,18 @@ object SgfUtil {
         var blackTurn = true
         for (move in state.moveHistory) {
             val color = if (blackTurn) "B" else "W"
-            when {
-                move.capturedStones.isNotEmpty() -> {
-                    // Regular move
-                    sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]")
-                    // Add captured stones as comment
-                    val caps = move.capturedStones.joinToString(",") {
-                        boardPosToGtp(it.row, it.col, state.size)
-                    }
-                    if (caps.isNotEmpty()) sb.append("C[captured: $caps]")
+            if (move.isPass) {
+                sb.append(";${color}[]\n")
+            } else if (move.capturedStones.isNotEmpty()) {
+                sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]")
+                val caps = move.capturedStones.joinToString(",") {
+                    boardPosToGtp(it.row, it.col, state.size)
                 }
-                else -> {
-                    sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]")
-                }
+                if (caps.isNotEmpty()) sb.append("C[captured: $caps]")
+                sb.append("\n")
+            } else {
+                sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]\n")
             }
-            sb.append("\n")
             blackTurn = !blackTurn
         }
 
@@ -65,8 +62,15 @@ object SgfUtil {
                     i = node.endIndex
                 }
                 content[i] == '(' -> {
-                    // Variation — skip for now
-                    i = skipVariation(content, i)
+                    // Variation — attach to the last parsed node
+                    val (varNodes, endIdx) = parseVariation(content, i)
+                    if (result.nodes.isNotEmpty()) {
+                        val lastNode = result.nodes.last()
+                        result.nodes[result.nodes.size - 1] = lastNode.copy(
+                            variations = lastNode.variations + listOf(varNodes)
+                        )
+                    }
+                    i = endIdx
                 }
                 content[i] == ')' -> break
                 else -> i++
@@ -85,14 +89,18 @@ object SgfUtil {
             }
         }
 
-        // Extract moves
+        // Extract moves (skip root node — it has header properties only)
         var blackTurn = true
-        for (node in result.nodes) {
+        for (node in result.nodes.drop(1)) {
             val moveVal = when {
                 blackTurn -> node.properties["B"]
                 else -> node.properties["W"]
             }
-            if (moveVal != null && moveVal.isNotEmpty()) {
+            // Pass move: empty string, "tt", or "pass" → (-1, -1)
+            val isPass = moveVal == null || moveVal.isEmpty() || moveVal == "tt" || moveVal == "pass"
+            if (isPass) {
+                result.moves.add(-1 to -1)
+            } else {
                 val pos = gtpToBoardPos(moveVal, result.boardSize)
                 if (pos.first >= 0) result.moves.add(pos)
             }
@@ -142,17 +150,32 @@ object SgfUtil {
         return SgfNode(properties, i)
     }
 
-    private fun skipVariation(content: String, start: Int): Int {
+    private fun parseVariation(content: String, start: Int): Pair<List<SgfNode>, Int> {
+        val nodes = mutableListOf<SgfNode>()
         var depth = 1
         var i = start + 1
         while (i < content.length && depth > 0) {
-            when (content[i]) {
-                '(' -> depth++
-                ')' -> depth--
+            when {
+                content[i] == ';' -> {
+                    i++
+                    val node = parseNode(content, i)
+                    // Sub-variations inside this node
+                    var endIdx = node.endIndex
+                    while (endIdx < content.length && content[endIdx] == '(') {
+                        val (subNodes, subEnd) = parseVariation(content, endIdx)
+                        // Add sub-variation moves to the node's variations
+                        i = subEnd
+                        endIdx = subEnd
+                    }
+                    nodes.add(node)
+                    i = endIdx
+                }
+                content[i] == '(' -> depth++
+                content[i] == ')' -> depth--
             }
-            i++
+            if (depth > 0) i++
         }
-        return i
+        return nodes to i
     }
 }
 
@@ -167,5 +190,6 @@ data class ParsedSgf(
 
 data class SgfNode(
     val properties: Map<String, String>,
-    val endIndex: Int
+    val endIndex: Int,
+    val variations: List<List<SgfNode>> = emptyList()
 )

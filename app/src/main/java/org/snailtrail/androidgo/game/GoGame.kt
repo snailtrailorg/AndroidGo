@@ -9,7 +9,7 @@ enum class StoneColor { Black, White }
 
 data class Stone(val row: Int, val col: Int, val color: StoneColor)
 
-data class Move(val stone: Stone, val capturedStones: List<Stone> = emptyList())
+data class Move(val stone: Stone, val capturedStones: List<Stone> = emptyList(), val isPass: Boolean = false)
 
 data class BoardState(
     val size: Int = 19,
@@ -77,11 +77,13 @@ class GoGame(initialSize: Int = 19) {
     fun pass() {
         _state.update { s ->
             val newPasses = s.consecutivePasses + 1
+            val passMove = Move(Stone(-1, -1, s.currentPlayer), isPass = true)
             s.copy(
                 currentPlayer = s.currentPlayer.opponent(),
                 consecutivePasses = newPasses,
                 gameOver = newPasses >= 2,
                 lastMove = null,
+                moveHistory = s.moveHistory + passMove,
                 redoStack = emptyList()
             )
         }
@@ -94,21 +96,27 @@ class GoGame(initialSize: Int = 19) {
             val newHistory = s.moveHistory.dropLast(1)
             val newStones = s.stones.toMutableMap()
 
-            // Remove the placed stone
-            newStones.remove(lastMove.stone.row to lastMove.stone.col)
-            // Restore captured stones
-            lastMove.capturedStones.forEach { cap ->
-                newStones[cap.row to cap.col] = cap.color
+            if (!lastMove.isPass) {
+                newStones.remove(lastMove.stone.row to lastMove.stone.col)
+                lastMove.capturedStones.forEach { cap ->
+                    newStones[cap.row to cap.col] = cap.color
+                }
             }
 
-            val prevLast = newHistory.lastOrNull()?.stone?.let { it.row to it.col }
+            val prevLast = newHistory.lastOrNull()
+                ?.takeUnless { it.isPass }?.stone?.let { it.row to it.col }
+            // Count consecutive passes in newHistory to restore state
+            var passes = 0
+            for (i in newHistory.indices.reversed()) {
+                if (newHistory[i].isPass) passes++ else break
+            }
             s.copy(
                 stones = newStones,
                 currentPlayer = s.currentPlayer.opponent(),
                 moveHistory = newHistory,
                 redoStack = s.redoStack + lastMove,
                 lastMove = prevLast,
-                consecutivePasses = 0,
+                consecutivePasses = passes,
                 gameOver = false
             )
         }
@@ -120,19 +128,20 @@ class GoGame(initialSize: Int = 19) {
         val move = s.redoStack.last()
         val newStones = s.stones.toMutableMap()
 
-        // Re-apply the move
-        newStones[move.stone.row to move.stone.col] = move.stone.color
-        val captured = findCapturedStones(newStones, move.stone.color.opponent(), s.size)
-        captured.forEach { pos -> newStones.remove(pos) }
+        if (!move.isPass) {
+            newStones[move.stone.row to move.stone.col] = move.stone.color
+            val captured = findCapturedStones(newStones, move.stone.color.opponent(), s.size)
+            captured.forEach { pos -> newStones.remove(pos) }
+        }
 
         _state.update { it.copy(
             stones = newStones,
             currentPlayer = it.currentPlayer.opponent(),
             moveHistory = it.moveHistory + move,
             redoStack = it.redoStack.dropLast(1),
-            lastMove = move.stone.row to move.stone.col,
-            consecutivePasses = 0,
-            gameOver = false
+            lastMove = if (move.isPass) null else (move.stone.row to move.stone.col),
+            consecutivePasses = if (move.isPass) it.consecutivePasses + 1 else 0,
+            gameOver = move.isPass && it.consecutivePasses + 1 >= 2
         ) }
         return true
     }

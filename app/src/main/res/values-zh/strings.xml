@@ -34,7 +34,8 @@
     <string name="about_version">版本 1.0</string>
     <string name="about_desc">Android 围棋应用 · Jetpack Compose</string>
     <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
-    <string name="about_copyright">© 2026 snailtrail.org — 保留所有权利。</string>
+    <string name="about_powered_by">Powered by snailtrail.org</string>
+    <string name="about_github">github.com/snailtrailorg/AndroidGo</string>
     <string name="about_close">关闭</string>
 
     <!-- New Game Dialog -->
@@ -83,6 +84,12 @@
     <string name="toast_ai_error">AI错误: %1$s</string>
     <string name="toast_ai_start_failed">AI引擎启动失败: %1$s</string>
     <string name="toast_ai_not_ready">AI引擎未启动</string>
+
+    <!-- End Game Dialog -->
+    <string name="end_game_title">对局结束</string>
+    <string name="end_game_msg">点击棋子切换死活状态，确认后定胜负。</string>
+    <string name="end_game_confirm">确认</string>
+    <string name="end_game_cancel">取消</string>
 
     <!-- Error Messages -->
     <string name="error_engine_closed">Engine is closed</string>

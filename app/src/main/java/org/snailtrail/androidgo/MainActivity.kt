@@ -128,6 +128,8 @@ class MainActivity : ComponentActivity() {
         var showAboutDialog by remember { mutableStateOf(false) }
         var showScore by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
+        var showEndGameDialog by remember { mutableStateOf(false) }
+        var manualDeadStones by remember { mutableStateOf<Set<Pair<Int, Int>>>(emptySet()) }
 
         // Page state
         var currentPage by remember { mutableStateOf<Page>(Page.Game) }
@@ -181,6 +183,17 @@ class MainActivity : ComponentActivity() {
                             GoBoardScreen(
                                 boardState = boardState,
                                 onCellClick = { row, col ->
+                                    // End-game dead stone toggling
+                                    if (showEndGameDialog) {
+                                        val pos = row to col
+                                        if (boardState.stones.containsKey(pos)) {
+                                            manualDeadStones = if (pos in manualDeadStones)
+                                                manualDeadStones - pos
+                                            else manualDeadStones + pos
+                                            currentScore = goGame.countTerritory(manualDeadStones)
+                                        }
+                                        return@GoBoardScreen
+                                    }
                                     if (aiThinking) {
                                         engineManager.getEngine()?.interrupt()
                                         return@GoBoardScreen
@@ -256,6 +269,18 @@ class MainActivity : ComponentActivity() {
                                 if (!goGame.state.value.gameOver) {
                                     goGame.pass()
                                 }
+                                if (goGame.state.value.gameOver) {
+                                    lifecycleScope.launch(Dispatchers.IO) {
+                                        val engine = engineManager.getEngine()
+                                        val dead = engine?.getDeadStones() ?: emptySet()
+                                        withContext(Dispatchers.Main) {
+                                            manualDeadStones = dead
+                                            currentScore = goGame.countTerritory(dead)
+                                            showScore = true
+                                            showEndGameDialog = true
+                                        }
+                                    }
+                                }
                             }
                         )
                     }
@@ -285,7 +310,8 @@ class MainActivity : ComponentActivity() {
                         goGame.setKomi(parsed.komi)
                         if (parsed.handicap > 0) goGame.setHandicap(parsed.handicap)
                         for ((row, col) in parsed.moves) {
-                            if (!goGame.placeStone(row, col)) break
+                            if (row < 0) goGame.pass()
+                            else if (!goGame.placeStone(row, col)) break
                         }
                         Toast.makeText(this@MainActivity, getString(R.string.toast_loaded, file.name), Toast.LENGTH_SHORT).show()
                         currentPage = Page.Game
@@ -322,12 +348,26 @@ class MainActivity : ComponentActivity() {
                         goGame.reset(reviewSize)
                         goGame.setKomi(reviewKomi)
                         for ((row, col) in reviewMoves) {
-                            if (!goGame.placeStone(row, col)) break
+                            if (row < 0) goGame.pass()
+                            else if (!goGame.placeStone(row, col)) break
                         }
                         currentPage = Page.Game
                     }
                 )
             }
+        }
+
+        if (showEndGameDialog) {
+            EndGameDialog(
+                onConfirm = {
+                    showEndGameDialog = false
+                },
+                onDismiss = {
+                    showEndGameDialog = false
+                    showScore = false
+                    manualDeadStones = emptySet()
+                }
+            )
         }
 
         if (showAboutDialog) {
@@ -758,6 +798,30 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
 private fun fmtScore(f: Float): String =
     if (f == f.toLong().toFloat()) "${f.toInt()}" else String.format("%.1f", f)
 
+// ── End Game dialog ──
+
+@Composable
+private fun EndGameDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.end_game_title)) },
+        text = { Text(stringResource(R.string.end_game_msg)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.end_game_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.end_game_cancel))
+            }
+        }
+    )
+}
+
 // ── About dialog ──
 
 @Composable
@@ -770,7 +834,9 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                 Text(stringResource(R.string.about_version), fontSize = 13.sp)
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
                 Text(stringResource(R.string.about_engines), fontSize = 13.sp)
-                Text(stringResource(R.string.about_copyright), fontSize = 13.sp)
+                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
+                Text(stringResource(R.string.about_github), fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary)
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.about_close)) } }
