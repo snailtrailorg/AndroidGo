@@ -249,8 +249,8 @@ class GoGame(initialSize: Int = 19) {
                 // Region belongs to a player iff it borders only one color
                 if (borders.size == 1) {
                     val owner = borders.first()
-                    // Only count truly empty points as territory (dead stones aren't counted)
-                    val territoryCount = region.count { it !in deadStones }
+                    // Chinese rules: dead stones are removed, their positions become territory
+                    val territoryCount = region.size
                     when (owner) {
                         StoneColor.Black -> blackTerritory += territoryCount
                         StoneColor.White -> whiteTerritory += territoryCount
