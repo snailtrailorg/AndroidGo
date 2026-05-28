@@ -180,7 +180,8 @@ fun ReviewScreen(
         game.setKomi(komi)
         for (i in 0 until displayIndex.coerceAtMost(moves.size)) {
             val (row, col) = moves[i]
-            if (!game.placeStone(row, col)) break
+            if (row < 0) game.pass()
+            else if (!game.placeStone(row, col)) break
         }
         game.state.value
     }

@@ -34,7 +34,8 @@
     <string name="about_version">Version 1.0</string>
     <string name="about_desc">Android Go app powered by Jetpack Compose</string>
     <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
-    <string name="about_copyright">© 2026 snailtrail.org — All rights reserved.</string>
+    <string name="about_powered_by">Powered by snailtrail.org</string>
+    <string name="about_github">github.com/snailtrailorg/AndroidGo</string>
     <string name="about_close">Close</string>
 
     <!-- New Game Dialog -->
@@ -83,6 +84,12 @@
     <string name="toast_ai_error">AI error: %1$s</string>
     <string name="toast_ai_start_failed">AI engine start failed: %1$s</string>
     <string name="toast_ai_not_ready">AI engine not ready</string>
+
+    <!-- End Game Dialog -->
+    <string name="end_game_title">Game Over</string>
+    <string name="end_game_msg">Tap stones to toggle dead/alive, then confirm.</string>
+    <string name="end_game_confirm">Confirm</string>
+    <string name="end_game_cancel">Cancel</string>
 
     <!-- Error Messages -->
     <string name="error_engine_closed">Engine is closed</string>

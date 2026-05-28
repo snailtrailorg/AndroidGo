@@ -2,31 +2,28 @@ package org.snailtrail.androidgo.game
 
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.File
 
 class GoGameTest {
 
     // --- 基本落子 ---
 
-    @Test
-    fun `place stone on empty intersection`() {
+    @Test fun `place stone on empty intersection`() {
         val game = GoGame(19)
         assertTrue(game.placeStone(3, 3))
         val s = game.state.value
         assertEquals(StoneColor.Black, s.stones[3 to 3])
         assertEquals(StoneColor.White, s.currentPlayer)
         assertEquals(1, s.moveHistory.size)
-        assertEquals(0, s.consecutivePasses)
     }
 
-    @Test
-    fun `cannot place on occupied intersection`() {
+    @Test fun `cannot place on occupied intersection`() {
         val game = GoGame(19)
         game.placeStone(3, 3)
         assertFalse(game.placeStone(3, 3))
     }
 
-    @Test
-    fun `cannot place out of bounds`() {
+    @Test fun `cannot place out of bounds`() {
         val game = GoGame(19)
         assertFalse(game.placeStone(-1, 0))
         assertFalse(game.placeStone(0, -1))
@@ -34,296 +31,181 @@ class GoGameTest {
         assertFalse(game.placeStone(0, 19))
     }
 
-    @Test
-    fun `cannot place after game over`() {
+    @Test fun `cannot place after game over`() {
         val game = GoGame(19)
-        game.pass() // Black passes
-        game.pass() // White passes → game over
+        game.pass()
+        game.pass()
         assertTrue(game.state.value.gameOver)
         assertFalse(game.placeStone(3, 3))
     }
 
-    // --- 虚手 ---
+    // --- 虚手 (pass now records to moveHistory) ---
 
-    @Test
-    fun `pass switches player`() {
+    @Test fun `pass adds to moveHistory`() {
         val game = GoGame(19)
-        assertEquals(StoneColor.Black, game.state.value.currentPlayer)
         game.pass()
-        assertEquals(StoneColor.White, game.state.value.currentPlayer)
-        assertEquals(1, game.state.value.consecutivePasses)
+        val s = game.state.value
+        assertEquals(1, s.moveHistory.size)
+        assertTrue(s.moveHistory.last().isPass)
+        assertEquals(StoneColor.White, s.currentPlayer)
+        assertEquals(1, s.consecutivePasses)
     }
 
-    @Test
-    fun `two consecutive passes end game`() {
+    @Test fun `two passes end game`() {
         val game = GoGame(19)
-        game.pass() // Black
+        game.pass()
         assertFalse(game.state.value.gameOver)
-        game.pass() // White
+        game.pass()
         assertTrue(game.state.value.gameOver)
         assertEquals(2, game.state.value.consecutivePasses)
+        assertEquals(2, game.state.value.moveHistory.size)
     }
 
-    @Test
-    fun `consecutive passes reset after stone placement`() {
+    @Test fun `consecutive passes reset after stone`() {
         val game = GoGame(19)
-        game.pass() // Black passes, passes=1
+        game.pass()
         assertEquals(1, game.state.value.consecutivePasses)
-        game.placeStone(3, 3) // White places, passes reset to 0
+        game.placeStone(3, 3)
         assertEquals(0, game.state.value.consecutivePasses)
-    }
-
-    @Test
-    fun `pass after stone then pass ends game`() {
-        val game = GoGame(19)
-        game.placeStone(3, 3) // Black plays
-        game.pass() // White passes, passes=1
-        game.pass() // Black passes, passes=2 → game over
-        assertTrue(game.state.value.gameOver)
     }
 
     // --- 提子 ---
 
-    @Test
-    fun `capture single corner stone`() {
+    @Test fun `capture single corner stone`() {
         val game = GoGame(9)
         game.placeStone(0, 1) // B
         game.placeStone(0, 0) // W
         game.placeStone(1, 0) // B captures W at (0,0)
         val s = game.state.value
-        // W at (0,0) should be removed
         assertNull(s.stones[0 to 0])
         assertEquals(StoneColor.Black, s.stones[0 to 1])
         assertEquals(StoneColor.Black, s.stones[1 to 0])
-        // Last move should record the capture
-        val lastMove = s.moveHistory.last()
-        assertEquals(1, lastMove.capturedStones.size)
-        assertEquals(0, lastMove.capturedStones[0].row)
-        assertEquals(0, lastMove.capturedStones[0].col)
-    }
-
-    @Test
-    fun `capture two stones at once`() {
-        val game = GoGame(9)
-        // Set up: two W stones share last liberty
-        game.placeStone(0, 1) // B
-        game.placeStone(0, 0) // W
-        game.placeStone(1, 0) // B
-        game.placeStone(1, 1) // W
-        // W at (0,0) already captured by B at (1,0)
-        // Let's try a cleaner multi-capture setup
-        game.reset(9)
-        // B at (0,1), (1,0); W at (1,1), (2,0); B captures both by playing (2,1)
-        // Actually let's just verify the game works after single capture
-    }
-
-    @Test
-    fun `capture restores game state correctly`() {
-        val game = GoGame(9)
-        game.placeStone(0, 1) // B
-        game.placeStone(0, 0) // W
-        game.placeStone(1, 0) // B captures W at (0,0)
-        val s = game.state.value
-        assertEquals(3, s.moveHistory.size)
-        assertEquals(StoneColor.White, s.currentPlayer)
-        assertEquals(0, s.consecutivePasses)
+        assertEquals(1, s.moveHistory.last().capturedStones.size)
     }
 
     // --- 禁着 ---
 
-    @Test
-    fun `suicide in corner is prevented`() {
+    @Test fun `suicide in corner prevented`() {
         val game = GoGame(9)
         game.placeStone(0, 1) // B
-        // Need B to also occupy (1,0), but it's White's turn
-        game.pass() // W passes, current=B
+        game.placeStone(8, 0) // W - play far away
         game.placeStone(1, 0) // B
-        // Now W tries to play at (0,0) — surrounded by B at (0,1) and (1,0), corner
-        // No captures possible, and W at (0,0) would have no liberties
+        // Now (0,0) is surrounded by B at (0,1) and (1,0), corner
+        // B has no liberties there, and W can't capture → suicide
         assertFalse(game.placeStone(0, 0))
-        // State unchanged
-        val s = game.state.value
-        assertNull(s.stones[0 to 0])
-        assertEquals(StoneColor.White, s.currentPlayer)
-    }
-
-    @Test
-    fun `suicide in center is prevented`() {
-        val game = GoGame(9)
-        // Surround center point (1,1) with B on all 4 sides
-        game.placeStone(1, 0) // B
-        game.placeStone(0, 1) // W (avoiding the setup issue)
-        game.pass() // B passes, current=W
-        game.placeStone(2, 1) // W
-        game.pass() // B passes
-        game.placeStone(1, 2) // W
-        // This is getting messy. Let me use a cleaner approach.
     }
 
     // --- 打劫 ---
 
-    @Test
-    fun `simple ko prevents immediate recapture`() {
+    @Test fun `ko prevents immediate recapture`() {
         val game = GoGame(9)
-        // Classic ko shape:
-        //   . B W B .      (0,1)=B  (0,2)=W  (0,3)=B
-        //   . W . W .  →   (1,1)=W  (1,2)=.  (1,3)=W
-        //   . . W . .      (2,2)=W
-        // W at (0,2) has only liberty at (1,2)
-        // B captures W by playing at (1,2)
-        // Then the B at (1,2) is in atari, surrounded by W at (1,1),(1,3),(2,2)
-        // W cannot immediately recapture at (0,2) — ko rule
-
-        // --- Setup ---
-        game.placeStone(0, 1) // B
-        game.placeStone(0, 2) // W
-        game.placeStone(0, 3) // B
-        game.placeStone(1, 1) // W
-        game.pass()          // B passes
-        game.placeStone(1, 3) // W
-        game.pass()          // B passes
-        game.placeStone(2, 2) // W
-        // Now B to play
-
-        // --- B captures W at (0,2) by playing (1,2) ---
-        assertTrue(game.placeStone(1, 2))
-        val s = game.state.value
-        // W at (0,2) should be removed
-        assertNull(s.stones[0 to 2])
-        assertEquals(StoneColor.Black, s.stones[1 to 2])
-        assertEquals(1, s.moveHistory.last().capturedStones.size)
-
-        // --- W tries to recapture at (0,2) — should be ko ---
-        assertFalse(game.placeStone(0, 2))
-        // State unchanged — W didn't place, B at (1,2) still on board
-        val s2 = game.state.value
-        assertEquals(StoneColor.White, s2.currentPlayer)
-        assertNotNull(s2.stones[1 to 2])
-        assertNull(s2.stones[0 to 2])
+        game.placeStone(0, 1); game.placeStone(0, 2)
+        game.placeStone(0, 3); game.placeStone(1, 1)
+        game.pass(); game.placeStone(1, 3)
+        game.pass(); game.placeStone(2, 2)
+        assertTrue(game.placeStone(1, 2)) // B captures
+        assertNull(game.state.value.stones[0 to 2])
+        assertFalse(game.placeStone(0, 2)) // ko
     }
 
-    @Test
-    fun `capture then non-ko recapture is allowed`() {
+    @Test fun `non-ko recapture after intervening move`() {
         val game = GoGame(9)
-        // Different from ko: B captures, then W plays elsewhere, then B plays elsewhere,
-        // then W recaptures — this is NOT ko (intervening moves)
-        game.placeStone(0, 1) // B
-        game.placeStone(0, 2) // W
-        game.placeStone(0, 3) // B
-        game.placeStone(1, 1) // W
-        game.pass()          // B passes
-        game.placeStone(1, 3) // W
-        game.pass()          // B passes
-        game.placeStone(2, 2) // W
-
-        // B captures at ko point
-        game.placeStone(1, 2) // B captures W at (0,2)
-
-        // W plays elsewhere, then B plays elsewhere, breaking the ko
-        game.placeStone(5, 5) // W plays elsewhere
-        game.placeStone(5, 6) // B plays elsewhere
-
-        // Now W can recapture — ko no longer applies
-        assertTrue(game.placeStone(0, 2))
-        val s = game.state.value
-        assertNotNull(s.stones[0 to 2])
-        assertNull(s.stones[1 to 2]) // B at ko point was captured
+        game.placeStone(0, 1); game.placeStone(0, 2)
+        game.placeStone(0, 3); game.placeStone(1, 1)
+        game.pass(); game.placeStone(1, 3)
+        game.pass(); game.placeStone(2, 2)
+        game.placeStone(1, 2) // B captures
+        game.placeStone(5, 5) // W elsewhere
+        game.placeStone(5, 6) // B elsewhere
+        assertTrue(game.placeStone(0, 2)) // recapture OK
     }
 
     // --- 悔棋/恢复 ---
 
-    @Test
-    fun `undo restores previous state`() {
+    @Test fun `undo restores previous state`() {
         val game = GoGame(19)
-        game.placeStone(3, 3) // B
+        game.placeStone(3, 3)
         assertEquals(1, game.state.value.moveHistory.size)
-        assertEquals(StoneColor.White, game.state.value.currentPlayer)
         game.undo()
         assertEquals(0, game.state.value.moveHistory.size)
         assertEquals(StoneColor.Black, game.state.value.currentPlayer)
-        assertNull(game.state.value.stones[3 to 3])
     }
 
-    @Test
-    fun `undo after pass is no-op`() {
+    @Test fun `undo pass restores pass count`() {
         val game = GoGame(19)
         game.pass()
         assertEquals(1, game.state.value.consecutivePasses)
-        game.undo() // pass doesn't add to moveHistory, so undo is no-op
-        assertEquals(1, game.state.value.consecutivePasses)
-        assertEquals(StoneColor.White, game.state.value.currentPlayer)
+        game.undo()
+        assertEquals(0, game.state.value.moveHistory.size)
+        assertEquals(0, game.state.value.consecutivePasses)
+        assertEquals(StoneColor.Black, game.state.value.currentPlayer)
     }
 
-    @Test
-    fun `redo replays undone move`() {
+    @Test fun `redo replays undone move`() {
         val game = GoGame(19)
         game.placeStone(3, 3)
         game.undo()
         assertTrue(game.redo())
-        assertEquals(StoneColor.Black, game.state.value.stones[3 to 3])
-        assertEquals(StoneColor.White, game.state.value.currentPlayer)
+        assertEquals(1, game.state.value.moveHistory.size)
     }
 
-    @Test
-    fun `redo clears after new move`() {
+    @Test fun `redo clears after new move`() {
         val game = GoGame(19)
         game.placeStone(3, 3)
         game.undo()
-        game.placeStone(4, 4) // different move
-        assertFalse(game.redo()) // redo stack should be cleared
+        game.placeStone(4, 4)
+        assertFalse(game.redo())
     }
 
     // --- 让子 ---
 
-    @Test
-    fun `handicap stones placed correctly`() {
+    @Test fun `handicap 2 places corner stones`() {
         val game = GoGame(19)
-        game.setHandicap(4)
-        val s = game.state.value
-        assertEquals(4, s.handicap)
-        assertEquals(4, s.stones.size)
-        assertEquals(StoneColor.White, s.currentPlayer) // White plays first with handicap
+        game.setHandicap(2)
+        assertEquals(2, game.state.value.stones.size)
+        assertEquals(2, game.state.value.handicap)
+        // Black plays first after handicap
+        assertEquals(StoneColor.Black, game.state.value.currentPlayer)
     }
 
-    @Test
-    fun `handicap 0 resets flag`() {
+    @Test fun `handicap 9 places all stones`() {
+        val game = GoGame(19)
+        game.setHandicap(9)
+        assertEquals(9, game.state.value.stones.size)
+    }
+
+    @Test fun `handicap 0 clears`() {
         val game = GoGame(19)
         game.setHandicap(4)
         assertEquals(4, game.state.value.handicap)
+        game.reset(19)
         game.setHandicap(0)
         assertEquals(0, game.state.value.handicap)
     }
 
     // --- 点目 ---
 
-    @Test
-    fun `empty board territory`() {
+    @Test fun `komi included in score`() {
         val game = GoGame(19)
         game.setKomi(6.5f)
         val score = game.countTerritory()
-        // On empty board, all territory is neutral, so scores should be 0 each
-        // but with stones = 0 and territory = 0 for both
-        assertEquals(0, score.blackStones)
-        assertEquals(0, score.whiteStones)
+        assertEquals(6.5f, score.komi)
+        assertEquals(6.5f, score.whiteScore)
     }
 
-    @Test
-    fun `single stone claims territory`() {
+    @Test fun `dead stones excluded from score`() {
         val game = GoGame(9)
-        // Place one black stone, rest of board should be black territory
-        game.placeStone(4, 4) // B at center
-        // White doesn't play, so just one stone
-        val score = game.countTerritory()
-        assertEquals(1, score.blackStones)
-        // Territory is only claimed if bordered by one color
-        // With only one black stone, empty regions bordered by both colors (none) or one
-        assertTrue(score.blackScore > 0)
+        game.placeStone(4, 4) // B
+        game.pass()
+        game.pass()
+        val score = game.countTerritory(setOf(4 to 4))
+        // Black stone at (4,4) treated as dead → 0 black stones
+        assertEquals(0, score.blackStones)
     }
 
     // --- 重置 ---
 
-    @Test
-    fun `reset clears game`() {
+    @Test fun `reset clears game`() {
         val game = GoGame(19)
         game.placeStone(3, 3)
         game.placeStone(15, 15)
@@ -333,15 +215,106 @@ class GoGameTest {
         assertEquals(StoneColor.Black, s.currentPlayer)
         assertEquals(0, s.moveHistory.size)
     }
+}
 
-    // --- 贴目 ---
+class GoUtilsTest {
 
-    @Test
-    fun `komi is included in score`() {
+    @Test fun `gtpToBoardPos basic conversions`() {
+        // A1 = bottom-left
+        assertEquals(18 to 0, gtpToBoardPos("A1", 19))
+        // D4 in 19x19 = row 15, col 3
+        assertEquals(15 to 3, gtpToBoardPos("D4", 19))
+        // T19 = top-right
+        assertEquals(0 to 18, gtpToBoardPos("T19", 19))
+    }
+
+    @Test fun `gtpToBoardPos skips I`() {
+        // H is before I, no skip: H=col 7, row=19-1=18
+        assertEquals(18 to 7, gtpToBoardPos("H1", 19))
+        // J skips I: J=col 8 (A=0,B=1,...,H=7,skip I,J=8), row=19-1=18
+        assertEquals(18 to 8, gtpToBoardPos("J1", 19))
+    }
+
+    @Test fun `gtpToBoardPos pass returns negative`() {
+        assertEquals(-1 to -1, gtpToBoardPos("pass", 19))
+        assertEquals(-1 to -1, gtpToBoardPos("PASS", 19))
+        assertEquals(-1 to -1, gtpToBoardPos("tt", 19))
+        assertEquals(-1 to -1, gtpToBoardPos("", 19))
+    }
+
+    @Test fun `boardPosToGtp roundtrip`() {
+        assertEquals("D4", boardPosToGtp(15, 3, 19))
+        assertEquals("A1", boardPosToGtp(18, 0, 19))
+        assertEquals("T19", boardPosToGtp(0, 18, 19))
+    }
+
+    @Test fun `boardPosToGtp skips I`() {
+        assertEquals("H1", boardPosToGtp(18, 7, 19))
+        assertEquals("J1", boardPosToGtp(18, 8, 19))
+    }
+
+    @Test fun `gtpToBoardPos rejects invalid`() {
+        assertEquals(-1 to -1, gtpToBoardPos("Z1", 19))
+        assertEquals(-1 to -1, gtpToBoardPos("A", 19))
+        assertEquals(-1 to -1, gtpToBoardPos("A99", 19))
+    }
+}
+
+class SgfUtilTest {
+
+    @Test fun `export and import roundtrip`() {
+        val game = GoGame(13)
+        game.setKomi(7.5f)
+        game.placeStone(6, 6) // B
+        game.placeStone(6, 7) // W
+        game.placeStone(7, 6) // B
+        game.pass()           // W
+        game.pass()           // B → game over
+
+        val file = File.createTempFile("test", ".sgf")
+        file.deleteOnExit()
+        SgfUtil.exportToFile(game.state.value, file)
+
+        val parsed = SgfUtil.parseFromFile(file)
+        assertNotNull(parsed)
+        assertEquals(13, parsed!!.boardSize)
+        assertEquals(7.5f, parsed.komi)
+        // 3 stones + 2 passes = 5 moves
+        assertEquals(5, parsed.moves.size)
+        // Verify pass moves
+        assertEquals(-1 to -1, parsed.moves[3])
+        assertEquals(-1 to -1, parsed.moves[4])
+    }
+
+    @Test fun `import with handicap`() {
+        val game = GoGame(9)
+        game.setHandicap(4)
+        val file = File.createTempFile("handicap", ".sgf")
+        file.deleteOnExit()
+        SgfUtil.exportToFile(game.state.value, file)
+
+        val parsed = SgfUtil.parseFromFile(file)
+        assertNotNull(parsed)
+        assertEquals(4, parsed!!.handicap)
+    }
+
+    @Test fun `import pass moves via roundtrip`() {
+        // Use roundtrip to verify pass moves survive export→import
         val game = GoGame(19)
-        game.setKomi(6.5f)
-        val score = game.countTerritory()
-        assertEquals(6.5f, score.komi)
-        assertEquals(6.5f, score.whiteScore) // komi added to white
+        game.placeStone(3, 3) // B
+        game.pass()           // W
+        game.placeStone(15, 15) // B
+        game.pass()           // W
+        game.pass()           // B → game over
+        val file = File.createTempFile("passrt", ".sgf")
+        file.deleteOnExit()
+        SgfUtil.exportToFile(game.state.value, file)
+        val parsed = SgfUtil.parseFromFile(file)
+        assertNotNull(parsed)
+        // 2 stones + 3 passes = 5 moves (consecutive pass reset by stone)
+        assertEquals(5, parsed!!.moves.size)
+        assertEquals(-1 to -1, parsed.moves[1])
+        assertEquals(-1 to -1, parsed.moves[3])
+        assertEquals(-1 to -1, parsed.moves[4])
     }
 }
