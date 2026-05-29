@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.snailtrail.androidgo.game.GoGame
@@ -195,15 +197,16 @@ fun ReviewScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(onClick = onBack) { Text(stringResource(R.string.review_back)) }
             Text(
                 stringResource(R.string.review_move, displayIndex, moves.size),
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center
             )
             Button(onClick = {
                 onIndexChange(displayIndex)
@@ -220,31 +223,43 @@ fun ReviewScreen(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f)
         )
 
-        // Navigation
+        // Navigation — always visible, disabled when not applicable
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = { displayIndex = 0 }, enabled = displayIndex > 0) {
-                Text("|<", fontSize = 16.sp)
-            }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) }, enabled = displayIndex > 0) {
-                Text("<", fontSize = 16.sp)
-            }
-            Spacer(Modifier.width(16.dp))
-            Text("$displayIndex / ${moves.size}", fontSize = 15.sp)
-            Spacer(Modifier.width(16.dp))
-            Button(onClick = { displayIndex = (displayIndex + 1).coerceAtMost(moves.size) }, enabled = displayIndex < moves.size) {
-                Text(">", fontSize = 16.sp)
-            }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { displayIndex = moves.size }, enabled = displayIndex < moves.size) {
-                Text(">|", fontSize = 16.sp)
-            }
+            Button(
+                onClick = { displayIndex = 0 },
+                enabled = displayIndex > 0,
+                modifier = Modifier.weight(1f),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
+            ) { Text("⏮", fontSize = 16.sp) }
+            Button(
+                onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) },
+                enabled = displayIndex > 0,
+                modifier = Modifier.weight(1f),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
+            ) { Text("◀", fontSize = 16.sp) }
+            Text(
+                "$displayIndex / ${moves.size}",
+                fontSize = 15.sp,
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+            Button(
+                onClick = { displayIndex = (displayIndex + 1).coerceAtMost(moves.size) },
+                enabled = displayIndex < moves.size,
+                modifier = Modifier.weight(1f),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
+            ) { Text("▶", fontSize = 16.sp) }
+            Button(
+                onClick = { displayIndex = moves.size },
+                enabled = displayIndex < moves.size,
+                modifier = Modifier.weight(1f),
+                contentPadding = ButtonDefaults.TextButtonContentPadding
+            ) { Text("⏭", fontSize = 16.sp) }
         }
     }
 }
