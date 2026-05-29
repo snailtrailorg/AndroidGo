@@ -60,8 +60,10 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
+import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
+import org.snailtrail.androidgo.ui.TitleBar
 import org.snailtrail.androidgo.ui.PlayerConfig
 import org.snailtrail.androidgo.ui.PlayerRole
 import org.snailtrail.androidgo.ui.AiEngine
@@ -290,6 +292,10 @@ class MainActivity : ComponentActivity() {
             Page.History -> {
                 HistoryScreen(
                     sgfDir = File(filesDir, SgfConstants.DIR),
+                    onMenuNewGame = { showNewGameDialog = true },
+                    onMenuSave = { saveSgf() },
+                    onMenuHistory = { /* already here */ },
+                    onMenuAbout = { showAboutDialog = true },
                     onLoad = { parsed, file ->
                         aiEngineReady.set(false)
                         engineManager.close()
@@ -310,6 +316,8 @@ class MainActivity : ComponentActivity() {
                         reviewSize = parsed.boardSize
                         reviewKomi = parsed.komi
                         reviewIndex = if (parsed.moves.isEmpty()) 0 else parsed.moves.size
+                        if (parsed.blackName.isNotEmpty()) blackConfig = PlayerConfig(name = parsed.blackName)
+                        if (parsed.whiteName.isNotEmpty()) whiteConfig = PlayerConfig(name = parsed.whiteName)
                         currentPage = Page.Review
                     },
                     onBack = { currentPage = Page.Game }
@@ -322,6 +330,8 @@ class MainActivity : ComponentActivity() {
                     boardSize = reviewSize,
                     komi = reviewKomi,
                     currentIndex = reviewIndex,
+                    blackName = blackConfig.name,
+                    whiteName = whiteConfig.name,
                     onIndexChange = { reviewIndex = it },
                     onBack = { currentPage = Page.Game },
                     onLoad = {
@@ -516,7 +526,7 @@ class MainActivity : ComponentActivity() {
             dir.mkdirs()
             val ts = SimpleDateFormat(SgfConstants.DATE_FORMAT, Locale.US).format(Date())
             val file = File(dir, "${SgfConstants.FILE_PREFIX}$ts${SgfConstants.FILE_SUFFIX}")
-            SgfUtil.exportToFile(goGame.state.value, file)
+            SgfUtil.exportToFile(goGame.state.value, file, blackConfig.name, whiteConfig.name)
             Toast.makeText(this, getString(R.string.toast_saved, file.name), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save SGF", e)
@@ -566,124 +576,7 @@ private sealed class Page {
     data object Review : Page()
 }
 
-// ── Top bar ──
-
-@Composable
-private fun TitleBar(
-    onMenuNewGame: () -> Unit,
-    onMenuSave: () -> Unit,
-    onMenuHistory: () -> Unit,
-    onMenuAbout: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            stringResource(R.string.app_name),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f).padding(start = 4.dp)
-        )
-        IconButton(onClick = onMenuNewGame,
-            modifier = Modifier.size(32.dp)) {
-            Icon(painterResource(R.drawable.ic_new_game),
-                contentDescription = stringResource(R.string.menu_new_game),
-                modifier = Modifier.size(20.dp))
-        }
-        IconButton(onClick = onMenuSave,
-            modifier = Modifier.size(32.dp)) {
-            Icon(painterResource(R.drawable.ic_save),
-                contentDescription = stringResource(R.string.menu_save),
-                modifier = Modifier.size(20.dp))
-        }
-        IconButton(onClick = onMenuHistory,
-            modifier = Modifier.size(32.dp)) {
-            Icon(painterResource(R.drawable.ic_history),
-                contentDescription = stringResource(R.string.menu_history),
-                modifier = Modifier.size(20.dp))
-        }
-        IconButton(onClick = onMenuAbout,
-            modifier = Modifier.size(32.dp)) {
-            Icon(painterResource(R.drawable.ic_about),
-                contentDescription = stringResource(R.string.menu_about),
-                modifier = Modifier.size(20.dp))
-        }
-    }
-}
-
-@Composable
-private fun GameInfoBar(
-    blackName: String,
-    whiteName: String,
-    blackIsAI: Boolean,
-    whiteIsAI: Boolean,
-    currentPlayer: StoneColor,
-    moveCount: Int,
-    gameOver: Boolean,
-    aiThinking: Boolean
-) {
-    val isBlackTurn = currentPlayer == StoneColor.Black && !gameOver
-    val active = !gameOver
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Black: circle + name
-        Box(
-            modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFF1A1A1A))
-        )
-        Text(
-            " $blackName${if (blackIsAI) " (AI)" else ""}",
-            fontSize = 13.sp,
-            fontWeight = if (isBlackTurn) FontWeight.Bold else FontWeight.Normal
-        )
-
-        // ⌛ inner side — always reserved space, visible when Black's turn
-        Text(
-            if (isBlackTurn) " ⌛" else "  ",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        // Center info (fills remaining space)
-        Text(
-            text = when {
-                gameOver -> stringResource(R.string.game_over)
-                aiThinking -> stringResource(R.string.ai_thinking)
-                else -> stringResource(R.string.move_count, moveCount)
-            },
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f)
-        )
-
-        // ⌛ inner side — always reserved, visible when White's turn
-        Text(
-            if (!isBlackTurn) "⌛ " else "  ",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        // White: name + circle
-        Text(
-            "${if (whiteIsAI) "(AI) " else ""}$whiteName ",
-            fontSize = 13.sp,
-            fontWeight = if (!isBlackTurn && active) FontWeight.Bold else FontWeight.Normal
-        )
-        Box(
-            modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFFF0F0F0))
-        )
-    }
-}
+// TitleBar and GameInfoBar are in ui/ package
 
 // ── Bottom bar ──
 

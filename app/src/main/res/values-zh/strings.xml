@@ -73,9 +73,11 @@
     <string name="history_load">加载</string>
     <string name="history_review">复盘</string>
     <string name="history_back">返回</string>
+    <string name="review_title">复盘</string>
     <string name="review_back">返回列表</string>
     <string name="review_move">第 %1$d/%2$d 手</string>
     <string name="review_load">加载到棋盘</string>
+    <string name="review_info">%1$d路 · %2$d手</string>
 
     <!-- Toast Messages -->
     <string name="toast_loaded">已加载 %1$s</string>
