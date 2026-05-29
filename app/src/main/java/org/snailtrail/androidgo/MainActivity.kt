@@ -292,10 +292,6 @@ class MainActivity : ComponentActivity() {
             Page.History -> {
                 HistoryScreen(
                     sgfDir = File(filesDir, SgfConstants.DIR),
-                    onMenuNewGame = { showNewGameDialog = true },
-                    onMenuSave = { saveSgf() },
-                    onMenuHistory = { /* already here */ },
-                    onMenuAbout = { showAboutDialog = true },
                     onLoad = { parsed, file ->
                         aiEngineReady.set(false)
                         engineManager.close()
