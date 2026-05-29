@@ -39,25 +39,25 @@ fun TitleBar(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f).padding(start = 4.dp)
         )
-        IconButton(onClick = onMenuNewGame, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onMenuNewGame, modifier = Modifier.size(40.dp)) {
             Icon(painterResource(R.drawable.ic_new_game),
                 contentDescription = stringResource(R.string.menu_new_game),
-                modifier = Modifier.size(20.dp))
+                modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuSave, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onMenuSave, modifier = Modifier.size(40.dp)) {
             Icon(painterResource(R.drawable.ic_save),
                 contentDescription = stringResource(R.string.menu_save),
-                modifier = Modifier.size(20.dp))
+                modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuHistory, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onMenuHistory, modifier = Modifier.size(40.dp)) {
             Icon(painterResource(R.drawable.ic_history),
                 contentDescription = stringResource(R.string.menu_history),
-                modifier = Modifier.size(20.dp))
+                modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuAbout, modifier = Modifier.size(32.dp)) {
+        IconButton(onClick = onMenuAbout, modifier = Modifier.size(40.dp)) {
             Icon(painterResource(R.drawable.ic_about),
                 contentDescription = stringResource(R.string.menu_about),
-                modifier = Modifier.size(20.dp))
+                modifier = Modifier.size(24.dp))
         }
     }
 }

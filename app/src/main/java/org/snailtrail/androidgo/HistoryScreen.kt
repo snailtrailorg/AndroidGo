@@ -241,18 +241,18 @@ fun ReviewScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
-                IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
                     Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.review_back),
-                        modifier = Modifier.size(20.dp))
+                        modifier = Modifier.size(24.dp))
                 }
                 IconButton(onClick = {
                     onIndexChange(displayIndex)
                     onLoad()
-                }, modifier = Modifier.size(32.dp)) {
+                }, modifier = Modifier.size(40.dp)) {
                     Icon(painterResource(R.drawable.ic_load),
                         contentDescription = stringResource(R.string.review_load),
-                        modifier = Modifier.size(20.dp))
+                        modifier = Modifier.size(24.dp))
                 }
             }
 
