@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +49,6 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.R
 import org.snailtrail.androidgo.ui.GameInfoBar
-import org.snailtrail.androidgo.ui.TitleBar
 import org.snailtrail.androidgo.ui.board.GoBoardScreen
 import java.io.File
 import java.text.SimpleDateFormat
@@ -68,10 +68,6 @@ private data class SgfEntry(
 @Composable
 fun HistoryScreen(
     sgfDir: File,
-    onMenuNewGame: () -> Unit = {},
-    onMenuSave: () -> Unit = {},
-    onMenuHistory: () -> Unit = {},
-    onMenuAbout: () -> Unit = {},
     onLoad: (ParsedSgf, File) -> Unit,
     onReview: (ParsedSgf) -> Unit,
     onBack: () -> Unit
@@ -99,82 +95,76 @@ fun HistoryScreen(
         list
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(16.dp)
-    ) {
-        // Title bar
-        TitleBar(
-            onMenuNewGame = onMenuNewGame,
-            onMenuSave = onMenuSave,
-            onMenuHistory = onMenuHistory,
-            onMenuAbout = onMenuAbout
-        )
-
-        // Sub-title
-        Row(
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(innerPadding)
+                .statusBarsPadding()
         ) {
-            Text(stringResource(R.string.history_title), fontSize = 15.sp, fontWeight = FontWeight.Medium)
-            TextButton(onClick = onBack) { Text(stringResource(R.string.history_back)) }
-        }
-
-        Spacer(Modifier.height(4.dp))
-
-        if (entries.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.history_empty), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            Column(
+            // Title bar — history specific
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                entries.forEach { entry ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    entry.date.ifEmpty { entry.name },
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    stringResource(R.string.history_entry_desc,
-                                        stringResource(R.string.history_board_size, entry.boardSize),
-                                        stringResource(R.string.history_moves, entry.moveCount)),
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = {
-                                    val parsed = SgfUtil.parseFromFile(entry.file)
-                                    if (parsed != null) onLoad(parsed, entry.file)
-                                }) {
-                                    Text(stringResource(R.string.history_load), fontSize = 12.sp)
+                Text(
+                    stringResource(R.string.history_title),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f).padding(start = 4.dp)
+                )
+                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                    Icon(painterResource(R.drawable.ic_back),
+                        contentDescription = stringResource(R.string.history_back),
+                        modifier = Modifier.size(24.dp))
+                }
+            }
+
+            if (entries.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.history_empty), fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .navigationBarsPadding()
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    entries.forEach { entry ->
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(entry.date.ifEmpty { entry.name },
+                                        fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                    Text(
+                                        stringResource(R.string.history_entry_desc,
+                                            stringResource(R.string.history_board_size, entry.boardSize),
+                                            stringResource(R.string.history_moves, entry.moveCount)),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                Button(onClick = {
-                                    val parsed = SgfUtil.parseFromFile(entry.file)
-                                    if (parsed != null) onReview(parsed)
-                                }) {
-                                    Text(stringResource(R.string.history_review), fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedButton(onClick = {
+                                        val parsed = SgfUtil.parseFromFile(entry.file)
+                                        if (parsed != null) onLoad(parsed, entry.file)
+                                    }) { Text(stringResource(R.string.history_load), fontSize = 12.sp) }
+                                    Button(onClick = {
+                                        val parsed = SgfUtil.parseFromFile(entry.file)
+                                        if (parsed != null) onReview(parsed)
+                                    }) { Text(stringResource(R.string.history_review), fontSize = 12.sp) }
                                 }
                             }
                         }
