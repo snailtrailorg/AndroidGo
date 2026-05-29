@@ -224,6 +224,10 @@ fun ReviewScreen(
         )
 
         // Navigation — always visible, disabled when not applicable
+        val navButtonColors = ButtonDefaults.buttonColors(
+            disabledContainerColor = ButtonDefaults.buttonColors().containerColor.copy(alpha = 0.35f),
+            disabledContentColor = ButtonDefaults.buttonColors().contentColor.copy(alpha = 0.45f)
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -235,13 +239,15 @@ fun ReviewScreen(
                 onClick = { displayIndex = 0 },
                 enabled = displayIndex > 0,
                 modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                colors = navButtonColors
             ) { Text("⏮", fontSize = 16.sp) }
             Button(
                 onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) },
                 enabled = displayIndex > 0,
                 modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                colors = navButtonColors
             ) { Text("◀", fontSize = 16.sp) }
             Text(
                 "$displayIndex / ${moves.size}",
@@ -252,13 +258,15 @@ fun ReviewScreen(
                 onClick = { displayIndex = (displayIndex + 1).coerceAtMost(moves.size) },
                 enabled = displayIndex < moves.size,
                 modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                colors = navButtonColors
             ) { Text("▶", fontSize = 16.sp) }
             Button(
                 onClick = { displayIndex = moves.size },
                 enabled = displayIndex < moves.size,
                 modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding
+                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                colors = navButtonColors
             ) { Text("⏭", fontSize = 16.sp) }
         }
     }
