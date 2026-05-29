@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -219,69 +220,78 @@ fun ReviewScreen(
         disabledContentColor = ButtonDefaults.buttonColors().contentColor.copy(alpha = 0.45f)
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-    ) {
-        // Title bar — review specific
-        Row(
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(horizontal = 6.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .padding(innerPadding)
+                .statusBarsPadding()
         ) {
-            Text(
-                stringResource(R.string.review_title),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f).padding(start = 6.dp)
+            // Title bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    stringResource(R.string.review_title),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f).padding(start = 4.dp)
+                )
+                IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                    Icon(painterResource(R.drawable.ic_history),
+                        contentDescription = stringResource(R.string.review_back),
+                        modifier = Modifier.size(20.dp),
+                        tint = Color(0xFF5C6BC0))
+                }
+                IconButton(onClick = {
+                    onIndexChange(displayIndex)
+                    onLoad()
+                }, modifier = Modifier.size(32.dp)) {
+                    Icon(painterResource(R.drawable.ic_new_game),
+                        contentDescription = stringResource(R.string.review_load),
+                        modifier = Modifier.size(20.dp),
+                        tint = Color(0xFF4CAF50))
+                }
+            }
+
+            // Game info bar
+            GameInfoBar(
+                blackName = blackName.ifEmpty { stringResource(R.string.default_black_name) },
+                whiteName = whiteName.ifEmpty { stringResource(R.string.default_white_name) },
+                blackIsAI = false,
+                whiteIsAI = false,
+                currentPlayer = currentColor,
+                moveCount = displayIndex,
+                gameOver = isEnd,
+                aiThinking = false
             )
-            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-                Icon(painterResource(R.drawable.ic_history),
-                    contentDescription = stringResource(R.string.review_back),
-                    modifier = Modifier.size(20.dp),
-                    tint = Color(0xFF5C6BC0))
+
+            // Board — centered vertically, same as main screen
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                GoBoardScreen(
+                    boardState = boardState,
+                    onCellClick = { _, _ -> },
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+                )
             }
-            IconButton(onClick = {
-                onIndexChange(displayIndex)
-                onLoad()
-            }, modifier = Modifier.size(32.dp)) {
-                Icon(painterResource(R.drawable.ic_new_game),
-                    contentDescription = stringResource(R.string.review_load),
-                    modifier = Modifier.size(20.dp),
-                    tint = Color(0xFF4CAF50))
-            }
-        }
 
-        // Game info bar — same as main screen
-        GameInfoBar(
-            blackName = blackName.ifEmpty { stringResource(R.string.default_black_name) },
-            whiteName = whiteName.ifEmpty { stringResource(R.string.default_white_name) },
-            blackIsAI = false,
-            whiteIsAI = false,
-            currentPlayer = currentColor,
-            moveCount = displayIndex,
-            gameOver = isEnd,
-            aiThinking = false
-        )
-
-        // Board
-        GoBoardScreen(
-            boardState = boardState,
-            onCellClick = { _, _ -> },
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-        )
-
-        // Navigation bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 6.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+            // Navigation bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             Button(
                 onClick = { displayIndex = 0 },
                 enabled = displayIndex > 0,
@@ -315,6 +325,7 @@ fun ReviewScreen(
                 contentPadding = ButtonDefaults.TextButtonContentPadding,
                 colors = navButtonColors
             ) { Text("⏭", fontSize = 16.sp) }
-        }
-    }
+            }
+        } // Column
+    } // Scaffold
 }
