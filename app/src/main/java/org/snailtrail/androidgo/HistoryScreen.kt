@@ -242,10 +242,9 @@ fun ReviewScreen(
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
                 IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
-                    Icon(painterResource(R.drawable.ic_history),
+                    Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.review_back),
-                        modifier = Modifier.size(20.dp),
-                        tint = Color(0xFF5C6BC0))
+                        modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = {
                     onIndexChange(displayIndex)
