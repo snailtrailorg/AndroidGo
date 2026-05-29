@@ -9,9 +9,11 @@ object SgfUtil {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
-    fun exportToFile(state: BoardState, file: File) {
+    fun exportToFile(state: BoardState, file: File, blackName: String = "", whiteName: String = "") {
         val sb = StringBuilder()
         sb.append("(;GM[1]FF[4]AP[${SgfConstants.APP_NAME}]\n")
+        if (blackName.isNotEmpty()) sb.append("PB[$blackName]\n")
+        if (whiteName.isNotEmpty()) sb.append("PW[$whiteName]\n")
         sb.append("SZ[${state.size}]KM[${state.komi}]HA[${state.handicap}]\n")
         sb.append("DT[${dateFormat.format(Date())}]\n")
 
@@ -84,6 +86,8 @@ object SgfUtil {
                     "SZ" -> result.boardSize = value.toIntOrNull() ?: 19
                     "KM" -> result.komi = value.toFloatOrNull() ?: 6.5f
                     "HA" -> result.handicap = value.toIntOrNull() ?: 0
+                    "PB" -> result.blackName = value
+                    "PW" -> result.whiteName = value
                     "AB" -> gtpToBoardPos(value, result.boardSize)?.let { result.handicapStones.add(it) }
                 }
             }
@@ -183,6 +187,8 @@ data class ParsedSgf(
     var boardSize: Int = 19,
     var komi: Float = 6.5f,
     var handicap: Int = 0,
+    var blackName: String = "",
+    var whiteName: String = "",
     val handicapStones: MutableList<Pair<Int, Int>> = mutableListOf(),
     val moves: MutableList<Pair<Int, Int>> = mutableListOf(),
     val nodes: MutableList<SgfNode> = mutableListOf()

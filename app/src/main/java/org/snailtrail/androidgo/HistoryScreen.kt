@@ -1,5 +1,6 @@
 package org.snailtrail.androidgo
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -31,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,6 +45,9 @@ import org.snailtrail.androidgo.game.GoGame
 import org.snailtrail.androidgo.game.ParsedSgf
 import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
+import org.snailtrail.androidgo.R
+import org.snailtrail.androidgo.ui.GameInfoBar
+import org.snailtrail.androidgo.ui.TitleBar
 import org.snailtrail.androidgo.ui.board.GoBoardScreen
 import java.io.File
 import java.text.SimpleDateFormat
@@ -58,6 +67,10 @@ private data class SgfEntry(
 @Composable
 fun HistoryScreen(
     sgfDir: File,
+    onMenuNewGame: () -> Unit = {},
+    onMenuSave: () -> Unit = {},
+    onMenuHistory: () -> Unit = {},
+    onMenuAbout: () -> Unit = {},
     onLoad: (ParsedSgf, File) -> Unit,
     onReview: (ParsedSgf) -> Unit,
     onBack: () -> Unit
@@ -92,16 +105,26 @@ fun HistoryScreen(
             .padding(16.dp)
     ) {
         // Title bar
+        TitleBar(
+            onMenuNewGame = onMenuNewGame,
+            onMenuSave = onMenuSave,
+            onMenuHistory = onMenuHistory,
+            onMenuAbout = onMenuAbout
+        )
+
+        // Sub-title
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(stringResource(R.string.history_title), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.history_title), fontSize = 15.sp, fontWeight = FontWeight.Medium)
             TextButton(onClick = onBack) { Text(stringResource(R.string.history_back)) }
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
 
         if (entries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -169,6 +192,8 @@ fun ReviewScreen(
     boardSize: Int,
     komi: Float,
     currentIndex: Int,
+    blackName: String = "",
+    whiteName: String = "",
     onIndexChange: (Int) -> Unit,
     onBack: () -> Unit,
     onLoad: () -> Unit
@@ -176,7 +201,6 @@ fun ReviewScreen(
     val game = remember { GoGame(boardSize).also { it.setKomi(komi) } }
     var displayIndex by remember { mutableIntStateOf(currentIndex) }
 
-    // Replay moves up to displayIndex
     val boardState = remember(game, displayIndex) {
         game.reset(boardSize)
         game.setKomi(komi)
@@ -188,33 +212,60 @@ fun ReviewScreen(
         game.state.value
     }
 
+    val currentColor = if (displayIndex % 2 == 0) StoneColor.Black else StoneColor.White
+    val isEnd = displayIndex >= moves.size
+    val navButtonColors = ButtonDefaults.buttonColors(
+        disabledContainerColor = ButtonDefaults.buttonColors().containerColor.copy(alpha = 0.35f),
+        disabledContentColor = ButtonDefaults.buttonColors().contentColor.copy(alpha = 0.45f)
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        // Top bar
+        // Title bar — review specific
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(onClick = onBack) { Text(stringResource(R.string.review_back)) }
             Text(
-                stringResource(R.string.review_move, displayIndex, moves.size),
+                stringResource(R.string.review_title),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
+                modifier = Modifier.weight(1f).padding(start = 6.dp)
             )
-            Button(onClick = {
+            IconButton(onClick = onBack, modifier = Modifier.size(32.dp)) {
+                Icon(painterResource(R.drawable.ic_history),
+                    contentDescription = stringResource(R.string.review_back),
+                    modifier = Modifier.size(20.dp),
+                    tint = Color(0xFF5C6BC0))
+            }
+            IconButton(onClick = {
                 onIndexChange(displayIndex)
                 onLoad()
-            }) {
-                Text(stringResource(R.string.review_load), fontSize = 13.sp)
+            }, modifier = Modifier.size(32.dp)) {
+                Icon(painterResource(R.drawable.ic_new_game),
+                    contentDescription = stringResource(R.string.review_load),
+                    modifier = Modifier.size(20.dp),
+                    tint = Color(0xFF4CAF50))
             }
         }
+
+        // Game info bar — same as main screen
+        GameInfoBar(
+            blackName = blackName.ifEmpty { stringResource(R.string.default_black_name) },
+            whiteName = whiteName.ifEmpty { stringResource(R.string.default_white_name) },
+            blackIsAI = false,
+            whiteIsAI = false,
+            currentPlayer = currentColor,
+            moveCount = displayIndex,
+            gameOver = isEnd,
+            aiThinking = false
+        )
 
         // Board
         GoBoardScreen(
@@ -223,15 +274,11 @@ fun ReviewScreen(
             modifier = Modifier.fillMaxWidth().aspectRatio(1f)
         )
 
-        // Navigation — always visible, disabled when not applicable
-        val navButtonColors = ButtonDefaults.buttonColors(
-            disabledContainerColor = ButtonDefaults.buttonColors().containerColor.copy(alpha = 0.35f),
-            disabledContentColor = ButtonDefaults.buttonColors().contentColor.copy(alpha = 0.45f)
-        )
+        // Navigation bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

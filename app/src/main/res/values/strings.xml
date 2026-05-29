@@ -73,9 +73,11 @@
     <string name="history_load">Load</string>
     <string name="history_review">Review</string>
     <string name="history_back">Back</string>
+    <string name="review_title">Review</string>
     <string name="review_back">Back to List</string>
     <string name="review_move">Move %1$d/%2$d</string>
     <string name="review_load">Load to Board</string>
+    <string name="review_info">%1$dx%1$d · %2$d moves</string>
 
     <!-- Toast Messages -->
     <string name="toast_loaded">Loaded %1$s</string>
