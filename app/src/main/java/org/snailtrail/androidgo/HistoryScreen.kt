@@ -250,10 +250,9 @@ fun ReviewScreen(
                     onIndexChange(displayIndex)
                     onLoad()
                 }, modifier = Modifier.size(32.dp)) {
-                    Icon(painterResource(R.drawable.ic_new_game),
+                    Icon(painterResource(R.drawable.ic_load),
                         contentDescription = stringResource(R.string.review_load),
-                        modifier = Modifier.size(20.dp),
-                        tint = Color(0xFF4CAF50))
+                        modifier = Modifier.size(20.dp))
                 }
             }
 
