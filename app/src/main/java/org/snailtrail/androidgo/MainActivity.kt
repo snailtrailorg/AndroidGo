@@ -316,6 +316,12 @@ class MainActivity : ComponentActivity() {
                         if (parsed.whiteName.isNotEmpty()) whiteConfig = PlayerConfig(name = parsed.whiteName)
                         currentPage = Page.Review
                     },
+                    onDelete = { file ->
+                        file.delete()
+                        // Force recomposition by toggling page
+                        currentPage = Page.Game
+                        currentPage = Page.History
+                    },
                     onBack = { currentPage = Page.Game }
                 )
             }

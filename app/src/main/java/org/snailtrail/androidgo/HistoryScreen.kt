@@ -70,6 +70,7 @@ fun HistoryScreen(
     sgfDir: File,
     onLoad: (ParsedSgf, File) -> Unit,
     onReview: (ParsedSgf) -> Unit,
+    onDelete: (File) -> Unit,
     onBack: () -> Unit
 ) {
     val entries = remember {
@@ -139,32 +140,28 @@ fun HistoryScreen(
                 ) {
                     entries.forEach { entry ->
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(entry.date.ifEmpty { entry.name },
-                                        fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                    Text(
-                                        stringResource(R.string.history_entry_desc,
-                                            stringResource(R.string.history_board_size, entry.boardSize),
-                                            stringResource(R.string.history_moves, entry.moveCount)),
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(onClick = {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    stringResource(R.string.history_entry_line,
+                                        entry.date.ifEmpty { entry.name },
+                                        entry.boardSize, entry.moveCount),
+                                    fontSize = 14.sp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onLoad(parsed, entry.file)
                                     }) { Text(stringResource(R.string.history_load), fontSize = 12.sp) }
-                                    Button(onClick = {
+                                    TextButton(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onReview(parsed)
                                     }) { Text(stringResource(R.string.history_review), fontSize = 12.sp) }
+                                    TextButton(onClick = { onDelete(entry.file) }) {
+                                        Text(stringResource(R.string.history_delete), fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                         }
