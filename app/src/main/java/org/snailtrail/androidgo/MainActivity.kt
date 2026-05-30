@@ -94,8 +94,28 @@ class MainActivity : ComponentActivity() {
         val savedConfig = loadConfigFromPrefs(prefs)
         blackConfig = savedConfig.blackPlayer
         whiteConfig = savedConfig.whitePlayer
-        goGame.reset(savedConfig.boardSize)
-        if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
+
+        // If returning from background, restore auto-saved game
+        val autoSave = File(filesDir, "autosave.sgf")
+        val restored = if (savedInstanceState != null && autoSave.exists()) {
+            val parsed = SgfUtil.parseFromFile(autoSave)
+            if (parsed != null && parsed.moves.isNotEmpty()) {
+                goGame.reset(parsed.boardSize)
+                if (parsed.handicap > 0) goGame.setHandicap(parsed.handicap)
+                for ((row, col) in parsed.moves) {
+                    if (row < 0) goGame.pass()
+                    else if (!goGame.placeStone(row, col)) break
+                }
+                if (parsed.blackName.isNotEmpty()) blackConfig = PlayerConfig(name = parsed.blackName)
+                if (parsed.whiteName.isNotEmpty()) whiteConfig = PlayerConfig(name = parsed.whiteName)
+                true
+            } else false
+        } else { autoSave.delete(); false }
+
+        if (!restored) {
+            goGame.reset(savedConfig.boardSize)
+            if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -552,6 +572,17 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save SGF", e)
             Toast.makeText(this, getString(R.string.toast_save_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val state = goGame.state.value
+        val autoSave = File(filesDir, "autosave.sgf")
+        if (state.moveHistory.isNotEmpty() && !state.gameOver) {
+            SgfUtil.exportToFile(state, autoSave, blackConfig.name, whiteConfig.name)
+        } else {
+            autoSave.delete()
         }
     }
 
