@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -175,6 +176,7 @@ class MainActivity : ComponentActivity() {
             if (boardState.gameOver && !scoringInFlight) {
                 scoringInFlight = true
                 showScore = true
+                currentScore = null  // trigger spinner
                 withContext(Dispatchers.IO) {
                     val dead = getDeadStonesForScoring(boardState)
                     withContext(Dispatchers.Main) {
@@ -224,7 +226,6 @@ class MainActivity : ComponentActivity() {
                                 boardState = boardState,
                                 onCellClick = { row, col ->
                                     if (aiThinking || showScore || scoringInFlight) {
-                                        if (aiThinking) engineManager.getEngine()?.interrupt()
                                         return@GoBoardScreen
                                     }
                                     val curState = goGame.state.value
@@ -240,8 +241,13 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // ── Score card ──
-                        if (showScore && currentScore != null) {
+                        // ── Score card / loading ──
+                        if (showScore && currentScore == null) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        } else if (showScore && currentScore != null) {
                             ScoreCard(
                                 score = currentScore!!,
                                 blackName = blackConfig.name,
@@ -255,6 +261,7 @@ class MainActivity : ComponentActivity() {
                             aiThinking = aiThinking,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
                             showScore = showScore,
+                            scoringInFlight = scoringInFlight,
                             onPass = {
                                 if (aiThinking) {
                                     // Just interrupt — the running genmove will return naturally
@@ -295,7 +302,8 @@ class MainActivity : ComponentActivity() {
                                     showScore = false
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
-                                    showScore = true  // disable buttons immediately
+                                    showScore = true
+                                    currentScore = null  // trigger spinner
                                     lifecycleScope.launch(Dispatchers.IO) {
                                         val deadStones = getDeadStonesForScoring(boardState)
                                         withContext(Dispatchers.Main) {
@@ -662,6 +670,7 @@ private fun BottomBar(
     aiThinking: Boolean,
     hasMoves: Boolean,
     showScore: Boolean = false,
+    scoringInFlight: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -675,10 +684,10 @@ private fun BottomBar(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Button(
-            onClick = onPass, enabled = !gameOver && !showScore,
+            onClick = onPass, enabled = !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(if (aiThinking) R.string.btn_interrupt else R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
+        ) { Text(stringResource(R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
@@ -690,7 +699,7 @@ private fun BottomBar(
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onScore, enabled = hasMoves && !aiThinking,
+            onClick = onScore, enabled = hasMoves && !aiThinking && !scoringInFlight,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(if (showScore) R.string.btn_continue else R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
