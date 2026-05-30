@@ -54,13 +54,6 @@ fun GameInfoBar(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.primary
         )
-        if (aiThinking) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
         Text(
             text = when {
                 gameOver -> stringResource(R.string.game_over)
