@@ -75,7 +75,6 @@ enum class AiEngine(val label: String) {
 
 data class NewGameConfig(
     val boardSize: Int = 13,
-    val komi: Float = 7.5f,
     val handicap: Int = 0,
     val blackPlayer: PlayerConfig = PlayerConfig(name = "黑方"),
     val whitePlayer: PlayerConfig = PlayerConfig(
@@ -92,7 +91,6 @@ fun NewGameDialog(
     val prefs = remember { ctx.getSharedPreferences(PrefKeys.NAME, Context.MODE_PRIVATE) }
 
     var boardSize by remember { mutableIntStateOf(prefs.getInt(PrefKeys.BOARD_SIZE, 13)) }
-    var komi by remember { mutableFloatStateOf(prefs.getFloat(PrefKeys.KOMI, 7.5f)) }
     var handicap by remember { mutableIntStateOf(prefs.getInt(PrefKeys.HANDICAP, 0)) }
 
     var blackRole by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_ROLE, PlayerRole.Human)) }
@@ -155,17 +153,6 @@ fun NewGameDialog(
                                 )
                             }
                         }
-                    }
-
-                    // ── Group: Komi ──
-                    GroupBox(stringResource(R.string.komi_label)) {
-                        SliderWithLabel(
-                            value = komi,
-                            onValueChange = { komi = (it * 2f).roundToInt() / 2f },
-                            valueRange = 0f..7.5f,
-                            steps = 14,
-                            label = stringResource(R.string.komi_unit, formatKomi(komi))
-                        )
                     }
 
                     // ── Group: Handicap ──
@@ -241,13 +228,12 @@ fun NewGameDialog(
                             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
                         ) { Text(stringResource(R.string.btn_cancel), fontSize = 14.sp) }
                         Button(onClick = {
-                            savePrefs(prefs, boardSize, komi, handicap,
+                            savePrefs(prefs, boardSize, handicap,
                                 blackRole, blackName, blackEngine, blackDifficulty,
                                 whiteRole, whiteName, whiteEngine, whiteDifficulty)
                             onConfirm(
                                 NewGameConfig(
                                     boardSize = boardSize,
-                                    komi = komi,
                                     handicap = handicap,
                                     blackPlayer = PlayerConfig(blackRole, blackName, blackEngine, blackDifficulty),
                                     whitePlayer = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDifficulty)
@@ -464,13 +450,12 @@ private inline fun <reified T : Enum<T>> enumPref(prefs: android.content.SharedP
 
 private fun savePrefs(
     prefs: android.content.SharedPreferences,
-    boardSize: Int, komi: Float, handicap: Int,
+    boardSize: Int, handicap: Int,
     blackRole: PlayerRole, blackName: String, blackEngine: AiEngine, blackDifficulty: Int,
     whiteRole: PlayerRole, whiteName: String, whiteEngine: AiEngine, whiteDifficulty: Int
 ) {
     prefs.edit()
         .putInt(PrefKeys.BOARD_SIZE, boardSize)
-        .putFloat(PrefKeys.KOMI, komi)
         .putInt(PrefKeys.HANDICAP, handicap)
         .putString(PrefKeys.BLACK_ROLE, blackRole.name)
         .putString(PrefKeys.BLACK_NAME, blackName)

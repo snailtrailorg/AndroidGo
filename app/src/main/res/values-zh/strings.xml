@@ -19,7 +19,7 @@
     <string name="btn_pass">过一手</string>
     <string name="btn_undo">悔棋</string>
     <string name="btn_redo">恢复</string>
-    <string name="btn_score">点目</string>
+    <string name="btn_score">数子</string>
     <string name="btn_end">结束</string>
 
     <!-- Score Card -->

@@ -18,7 +18,7 @@ data class BoardState(
     val moveHistory: List<Move> = emptyList(),
     val redoStack: List<Move> = emptyList(),
     val lastMove: Pair<Int, Int>? = null,
-    val komi: Float = 6.5f,
+    val komi: Float = 3.75f,
     val handicap: Int = 0,
     val gameOver: Boolean = false,
     val consecutivePasses: Int = 0
@@ -158,7 +158,7 @@ class GoGame(initialSize: Int = 19) {
     fun setHandicap(n: Int) {
         require(n in 0..9) { "Handicap must be 0-9" }
         if (n == 0) {
-            _state.value = _state.value.copy(handicap = 0)
+            _state.value = _state.value.copy(handicap = 0, currentPlayer = StoneColor.Black)
             return
         }
         val sz = _state.value.size
@@ -179,13 +179,14 @@ class GoGame(initialSize: Int = 19) {
         )
         val stones = mutableMapOf<Pair<Int, Int>, StoneColor>()
         for (i in 0 until n) {
-            stones[allPlacements[i]] = StoneColor.White
+            stones[allPlacements[i]] = StoneColor.Black  // weaker player takes Black
         }
 
+        // Chinese rule: handicap → Black gets stones, White plays first, no komi
         _state.value = _state.value.copy(
             stones = stones,
             handicap = n,
-            currentPlayer = StoneColor.Black,
+            currentPlayer = StoneColor.White,
             moveHistory = emptyList(),
             redoStack = emptyList(),
             lastMove = null,
@@ -265,8 +266,10 @@ class GoGame(initialSize: Int = 19) {
         // Chinese area scoring: live stones + territory
         val blackStones = s.stones.count { it.value == StoneColor.Black && (it.key !in deadStones) }
         val whiteStones = s.stones.count { it.value == StoneColor.White && (it.key !in deadStones) }
+        // Komi: 3.75 for even game; handicap → 还子 = handicap/2
+        val komi = if (s.handicap == 0) 3.75f else (s.handicap / 2f)
         val blackScore = blackStones + blackTerritory
-        val whiteScore = whiteStones + whiteTerritory + s.komi
+        val whiteScore = whiteStones + whiteTerritory + komi
 
         return TerritoryScore(
             blackStones = blackStones,
@@ -275,7 +278,7 @@ class GoGame(initialSize: Int = 19) {
             whiteTerritory = whiteTerritory,
             blackScore = blackScore.toFloat(),
             whiteScore = whiteScore.toFloat(),
-            komi = s.komi,
+            komi = komi,
             territoryMap = territoryMap
         )
     }
