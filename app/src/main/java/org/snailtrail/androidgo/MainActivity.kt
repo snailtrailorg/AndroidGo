@@ -439,14 +439,17 @@ class MainActivity : ComponentActivity() {
                 val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
                 initAiEngine(aiPlayer, config.boardSize, engKomi)
 
-                // If AI plays first (AI vs Human), generate its move
+                // If AI plays first, generate its move
                 val state = goGame.state.value
-                if (state.currentPlayer == StoneColor.Black && blackConfig.role == PlayerRole.AI) {
+                val aiFirst = (state.currentPlayer == StoneColor.Black && blackConfig.role == PlayerRole.AI)
+                           || (state.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
+                if (aiFirst) {
+                    val aiBlack = state.currentPlayer == StoneColor.Black
                     withContext(Dispatchers.Main) { aiThinkingState(true) }
                     try {
                         val engine = engineManager.getEngine()
                         if (engine != null) {
-                            val ok = engine.generateMove(true)
+                            val ok = engine.generateMove(aiBlack)
                             if (ok) {
                                 val moveStr = engine.getLastGeneratedMove()
                                 val (aiRow, aiCol) = gtpToBoardPos(moveStr, config.boardSize)
