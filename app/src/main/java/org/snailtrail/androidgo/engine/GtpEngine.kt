@@ -53,7 +53,7 @@ class GtpEngine : Closeable {
         _state.value = _state.value.copy(running = false)
     }
 
-    fun init(boardSize: Int = 19, komi: Float = 6.5f): Boolean {
+    fun init(boardSize: Int = 19, komi: Float = 3.75f): Boolean {
         check(!closed) { "Engine is closed" }
         val ok = nativeInit(nativePtr, boardSize, komi)
         if (ok) {
