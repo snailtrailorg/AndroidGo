@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -231,10 +234,13 @@ fun NewGameDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                     ) {
-                        TextButton(onClick = onDismiss) { Text(stringResource(R.string.btn_cancel), fontSize = 14.sp) }
-                        TextButton(onClick = {
+                        Button(onClick = onDismiss,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
+                        ) { Text(stringResource(R.string.btn_cancel), fontSize = 14.sp) }
+                        Button(onClick = {
                             savePrefs(prefs, boardSize, komi, handicap,
                                 blackRole, blackName, blackEngine, blackDifficulty,
                                 whiteRole, whiteName, whiteEngine, whiteDifficulty)
@@ -247,7 +253,10 @@ fun NewGameDialog(
                                     whitePlayer = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDifficulty)
                                 )
                             )
-                        }) { Text(stringResource(R.string.btn_start), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+                        },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
+                        ) { Text(stringResource(R.string.btn_start), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
                     }
                 }
             } // outer Column
@@ -442,8 +451,9 @@ private fun difficultyLabel(engine: AiEngine, level: Int): String = when (engine
     AiEngine.KataGo -> stringResource(R.string.difficulty_katago, level)
 }
 
+@Composable
 private fun formatKomi(k: Float): String =
-    if (k == k.toLong().toFloat()) "${k.toInt()}目" else "${k}目"
+    if (k == k.toLong().toFloat()) "${k.toInt()}" else "$k"
 
 // ── Preferences ──
 

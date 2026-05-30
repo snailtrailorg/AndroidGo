@@ -70,6 +70,7 @@
     <string name="history_board_size">%1$d路</string>
     <string name="history_moves">%1$d手</string>
     <string name="history_entry_line">%1$s · %2$d路 · %3$d手</string>
+    <string name="history_players">%1$s  VS  %2$s</string>
     <string name="history_entry_desc">%1$s · %2$s</string>
     <string name="history_delete">删除</string>
     <string name="history_load">加载</string>

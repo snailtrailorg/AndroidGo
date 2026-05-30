@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -91,9 +93,30 @@ class MainActivity : ComponentActivity() {
         val savedConfig = loadConfigFromPrefs(prefs)
         blackConfig = savedConfig.blackPlayer
         whiteConfig = savedConfig.whitePlayer
-        goGame.reset(savedConfig.boardSize)
-        goGame.setKomi(savedConfig.komi)
-        if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
+
+        // Try to restore auto-saved game
+        val autoSave = File(filesDir, "autosave.sgf")
+        val restored = if (autoSave.exists()) {
+            val parsed = SgfUtil.parseFromFile(autoSave)
+            if (parsed != null && parsed.moves.isNotEmpty()) {
+                goGame.reset(parsed.boardSize)
+                goGame.setKomi(parsed.komi)
+                if (parsed.handicap > 0) goGame.setHandicap(parsed.handicap)
+                for ((row, col) in parsed.moves) {
+                    if (row < 0) goGame.pass()
+                    else if (!goGame.placeStone(row, col)) break
+                }
+                parsed.blackName.let { if (it.isNotEmpty()) blackConfig = PlayerConfig(name = it) }
+                parsed.whiteName.let { if (it.isNotEmpty()) whiteConfig = PlayerConfig(name = it) }
+                true
+            } else false
+        } else false
+
+        if (!restored) {
+            goGame.reset(savedConfig.boardSize)
+            goGame.setKomi(savedConfig.komi)
+            if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -131,6 +154,7 @@ class MainActivity : ComponentActivity() {
         var showAboutDialog by remember { mutableStateOf(false) }
         var showScore by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
+        var scoringInFlight by remember { mutableStateOf(false) }
 
         // Page state
         var currentPage by remember { mutableStateOf<Page>(Page.Game) }
@@ -139,6 +163,7 @@ class MainActivity : ComponentActivity() {
         var reviewIndex by remember { mutableIntStateOf(0) }
         var reviewSize by remember { mutableIntStateOf(19) }
         var reviewKomi by remember { mutableStateOf(6.5f) }
+        var reviewHandicap by remember { mutableIntStateOf(0) }
 
         val aiActive = blackConfig.role == PlayerRole.AI || whiteConfig.role == PlayerRole.AI
         val isAiTurn = aiActive && (
@@ -243,9 +268,19 @@ class MainActivity : ComponentActivity() {
                             },
                             onUndo = {
                                 showScore = false
-                                if (aiActive && boardState.moveHistory.size >= 2) {
-                                    goGame.undo(); goGame.undo()
-                                    aiEngineReady.set(false)
+                                val hist = boardState.moveHistory
+                                if (aiActive && hist.size >= 2) {
+                                    val last = hist.last()
+                                    val prev = hist[hist.size - 2]
+                                    // Undo both the AI's move and the human's move
+                                    val doubleUndo = (last.stone.color == StoneColor.White && whiteConfig.role == PlayerRole.AI)
+                                        || (last.stone.color == StoneColor.Black && blackConfig.role == PlayerRole.AI)
+                                    if (doubleUndo) {
+                                        goGame.undo(); goGame.undo()
+                                        aiEngineReady.set(false)
+                                    } else {
+                                        goGame.undo()
+                                    }
                                 } else {
                                     goGame.undo()
                                 }
@@ -257,12 +292,14 @@ class MainActivity : ComponentActivity() {
                             onScore = {
                                 if (showScore) {
                                     showScore = false
-                                } else {
+                                } else if (!scoringInFlight) {
+                                    scoringInFlight = true
                                     lifecycleScope.launch(Dispatchers.IO) {
                                         val deadStones = engineManager.getEngine()?.getDeadStones() ?: emptySet()
                                         withContext(Dispatchers.Main) {
                                             currentScore = goGame.countTerritory(deadStones)
                                             showScore = true
+                                            scoringInFlight = false
                                         }
                                     }
                                 }
@@ -295,8 +332,9 @@ class MainActivity : ComponentActivity() {
                     onLoad = { parsed, file ->
                         aiEngineReady.set(false)
                         engineManager.close()
-                        blackConfig = PlayerConfig(name = getString(R.string.default_black_name))
-                        whiteConfig = PlayerConfig(name = getString(R.string.default_white_name))
+                        // Keep current AI config, only update names from SGF
+                        if (parsed.blackName.isNotEmpty()) blackConfig = blackConfig.copy(name = parsed.blackName)
+                        if (parsed.whiteName.isNotEmpty()) whiteConfig = whiteConfig.copy(name = parsed.whiteName)
                         goGame.reset(parsed.boardSize)
                         goGame.setKomi(parsed.komi)
                         if (parsed.handicap > 0) goGame.setHandicap(parsed.handicap)
@@ -311,17 +349,13 @@ class MainActivity : ComponentActivity() {
                         reviewMoves = parsed.moves.toList()
                         reviewSize = parsed.boardSize
                         reviewKomi = parsed.komi
+                        reviewHandicap = parsed.handicap
                         reviewIndex = if (parsed.moves.isEmpty()) 0 else parsed.moves.size
-                        if (parsed.blackName.isNotEmpty()) blackConfig = PlayerConfig(name = parsed.blackName)
-                        if (parsed.whiteName.isNotEmpty()) whiteConfig = PlayerConfig(name = parsed.whiteName)
+                        if (parsed.blackName.isNotEmpty()) blackConfig = blackConfig.copy(name = parsed.blackName)
+                        if (parsed.whiteName.isNotEmpty()) whiteConfig = whiteConfig.copy(name = parsed.whiteName)
                         currentPage = Page.Review
                     },
-                    onDelete = { file ->
-                        file.delete()
-                        // Force recomposition by toggling page
-                        currentPage = Page.Game
-                        currentPage = Page.History
-                    },
+                    onDelete = { file -> file.delete() },
                     onBack = { currentPage = Page.Game }
                 )
             }
@@ -332,6 +366,7 @@ class MainActivity : ComponentActivity() {
                     boardSize = reviewSize,
                     komi = reviewKomi,
                     currentIndex = reviewIndex,
+                    handicap = reviewHandicap,
                     blackName = blackConfig.name,
                     whiteName = whiteConfig.name,
                     onIndexChange = { reviewIndex = it },
@@ -499,7 +534,11 @@ class MainActivity : ComponentActivity() {
                     if (aiRow >= 0 && aiCol >= 0) {
                         withContext(Dispatchers.Main) {
                             val placed = goGame.placeStone(aiRow, aiCol)
-                            if (!placed) goGame.pass()
+                            if (!placed) {
+                                // Engine already made the move — undo it to stay synced
+                                withContext(Dispatchers.IO) { engine.undo() }
+                                goGame.pass()
+                            }
                         }
                     } else {
                         withContext(Dispatchers.Main) { goGame.pass() }
@@ -533,6 +572,17 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save SGF", e)
             Toast.makeText(this, getString(R.string.toast_save_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val state = goGame.state.value
+        val autoSave = File(filesDir, "autosave.sgf")
+        if (state.moveHistory.isNotEmpty() && !state.gameOver) {
+            SgfUtil.exportToFile(state, autoSave, blackConfig.name, whiteConfig.name)
+        } else {
+            autoSave.delete()
         }
     }
 
@@ -597,32 +647,32 @@ private fun BottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Button(
             onClick = onPass, enabled = !gameOver,
-            modifier = Modifier.weight(1f),
-            contentPadding = ButtonDefaults.TextButtonContentPadding
+            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(if (aiThinking) R.string.btn_interrupt else R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking,
-            modifier = Modifier.weight(1f),
-            contentPadding = ButtonDefaults.TextButtonContentPadding
+            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onRedo, enabled = hasMoves && !gameOver && !aiThinking,
-            modifier = Modifier.weight(1f),
-            contentPadding = ButtonDefaults.TextButtonContentPadding
+            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onScore, enabled = hasMoves,
-            modifier = Modifier.weight(1f),
-            contentPadding = ButtonDefaults.TextButtonContentPadding
+            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onEnd, enabled = !gameOver,
-            modifier = Modifier.weight(1f),
-            contentPadding = ButtonDefaults.TextButtonContentPadding
+            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
     }
 }
@@ -686,6 +736,11 @@ private fun AboutDialog(onDismiss: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary)
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.about_close)) } }
+        confirmButton = {
+            Button(onClick = onDismiss,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
+            ) { Text(stringResource(R.string.about_close)) }
+        }
     )
 }

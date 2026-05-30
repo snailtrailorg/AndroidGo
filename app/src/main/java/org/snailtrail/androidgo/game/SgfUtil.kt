@@ -94,7 +94,8 @@ object SgfUtil {
         }
 
         // Extract moves (skip root node — it has header properties only)
-        var blackTurn = true
+        // If handicap, White plays first after handicap placement
+        var blackTurn = result.handicap == 0
         for (node in result.nodes.drop(1)) {
             val moveVal = when {
                 blackTurn -> node.properties["B"]

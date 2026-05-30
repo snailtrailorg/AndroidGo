@@ -175,14 +175,16 @@ GtpClient::~GtpClient() {
 struct ThreadArgs {
     int (*fn)(int, const char**, int, int);
     int argc;
-    const char** argv;
+    char** argv;  // deep-copied, freed by engineThreadFunc
     int stdinFd;
     int stdoutFd;
 };
 
 static void* engineThreadFunc(void* arg) {
     ThreadArgs* ta = (ThreadArgs*)arg;
-    ta->fn(ta->argc, ta->argv, ta->stdinFd, ta->stdoutFd);
+    ta->fn(ta->argc, (const char**)ta->argv, ta->stdinFd, ta->stdoutFd);
+    for (int i = 0; i < ta->argc; i++) free(ta->argv[i]);
+    free(ta->argv);
     delete ta;
     return nullptr;
 }
@@ -210,15 +212,13 @@ bool GtpClient::start(const std::string &command) {
                 return false;
             }
 
-            // Build argv for bridge — skip args[0] (engine path) so
-            // katago_gtp_main receives args matching normal CLI convention
-            std::vector<const char*> argv;
-            for (size_t i = 1; i < args.size(); i++) argv.push_back(args[i].c_str());
-            argv.push_back(nullptr);
+            // Build argv for bridge — skip args[0] (engine path), deep-copy
+            int argc = (int)args.size() - 1;
+            char** cargv = (char**)malloc(sizeof(char*) * (argc + 1));
+            for (int i = 0; i < argc; i++) cargv[i] = strdup(args[i + 1].c_str());
+            cargv[argc] = nullptr;
 
-            auto* ta = new ThreadArgs{gtpmain, (int)argv.size()-1, argv.data(),
-                                       inPipe[0], outPipe[1]};
-
+            auto* ta = new ThreadArgs{gtpmain, argc, cargv, inPipe[0], outPipe[1]};
             pthread_create(&m_engineThread, nullptr, engineThreadFunc, ta);
 
             m_pid = 0;  // no real PID for thread
