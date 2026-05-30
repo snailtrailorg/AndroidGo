@@ -26,10 +26,10 @@
     <!-- Score Card -->
     <string name="score_black">B %1$s: %2$d stones + %3$d area = %4$s</string>
     <string name="score_white">W %1$s: %2$d stones + %3$d area + %4$s komi = %5$s</string>
-    <string name="score_black_leads">B %1$s ahead %2$s</string>
-    <string name="score_white_leads">W %1$s ahead %2$s</string>
-    <string name="score_black_wins">B %1$s wins %2$s</string>
-    <string name="score_white_wins">W %1$s wins %2$s</string>
+    <string name="score_black_leads">B %1$s +%2$s</string>
+    <string name="score_white_leads">W %1$s +%2$s</string>
+    <string name="score_black_wins">B %1$s +%2$s</string>
+    <string name="score_white_wins">W %1$s +%2$s</string>
     <string name="score_draw">Draw</string>
 
     <!-- About Dialog -->
