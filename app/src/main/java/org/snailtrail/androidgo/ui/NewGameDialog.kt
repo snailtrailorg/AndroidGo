@@ -105,6 +105,8 @@ fun NewGameDialog(
     var whiteEngine by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_ENGINE, AiEngine.GnuGo)) }
     var whiteDifficulty by remember { mutableIntStateOf(prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5)) }
 
+    val aiVsAi = blackRole == PlayerRole.AI && whiteRole == PlayerRole.AI
+
     val defaultHumanBlackName = stringResource(R.string.default_black_name)
     val defaultHumanWhiteName = stringResource(R.string.default_white_name)
     fun defaultName(role: PlayerRole, engine: AiEngine, isBlack: Boolean): String = when (role) {
@@ -240,6 +242,7 @@ fun NewGameDialog(
                                 )
                             )
                         },
+                            enabled = !aiVsAi,
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
                         ) { Text(stringResource(R.string.btn_start), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
