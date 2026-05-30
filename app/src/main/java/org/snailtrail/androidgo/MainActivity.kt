@@ -758,8 +758,11 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
     }
 }
 
-private fun fmtScore(f: Float): String =
-    if (f == f.toLong().toFloat()) "${f.toInt()}" else String.format("%.1f", f)
+private fun fmtScore(f: Float): String {
+    if (f == f.toLong().toFloat()) return "${f.toInt()}"
+    val s = String.format("%.2f", f)
+    return if (s.endsWith("0")) s.dropLast(1) else s
+}
 
 // ── About dialog ──
 
