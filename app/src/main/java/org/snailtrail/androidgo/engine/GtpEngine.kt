@@ -32,6 +32,7 @@ class GtpEngine : Closeable {
 
     init {
         nativePtr = nativeCreate()
+        check(nativePtr != 0L) { "Failed to create native GTP client" }
     }
 
     fun start(command: String): Boolean {

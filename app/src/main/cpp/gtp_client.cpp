@@ -471,7 +471,7 @@ bool GtpClient::setBoardSize(int size) {
 
 bool GtpClient::setKomi(float komi) {
     char buf[32];
-    snprintf(buf, sizeof(buf), "komi %.1f", komi);
+    snprintf(buf, sizeof(buf), "komi %.2f", komi);
     if (!sendCommand(buf)) return false;
     if (!waitResponse()) return false;
     m_komi = komi;
