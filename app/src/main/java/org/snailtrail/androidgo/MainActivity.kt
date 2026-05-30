@@ -252,6 +252,7 @@ class MainActivity : ComponentActivity() {
                                 score = currentScore!!,
                                 blackName = blackConfig.name,
                                 whiteName = whiteConfig.name,
+                                endGame = boardState.gameOver,
                                 boardSize = boardState.size
                             )
                         }
@@ -723,7 +724,7 @@ private fun BottomBar(
 // ── Score card ──
 
 @Composable
-private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, boardSize: Int) {
+private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGame: Boolean = false, boardSize: Int = 19) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -744,12 +745,12 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
                 stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore)),
                 fontSize = 14.sp
             )
-            // Chinese rules: 黑胜子数 = 黑总子 - 贴子(还子) - 半盘
-            val diff = score.blackScore - score.komi - (boardSize * boardSize) / 2f
+            val diff = if (endGame) score.blackScore - score.komi - (boardSize * boardSize) / 2f
+                       else score.blackScore - score.whiteScore
             Text(
                 text = when {
-                    diff > 0 -> stringResource(R.string.score_black_leads, blackName, fmtScore(diff))
-                    diff < 0 -> stringResource(R.string.score_white_leads, whiteName, fmtScore(-diff))
+                    diff > 0 -> stringResource(if (endGame) R.string.score_black_wins else R.string.score_black_leads, blackName, fmtScore(diff))
+                    diff < 0 -> stringResource(if (endGame) R.string.score_white_wins else R.string.score_white_leads, whiteName, fmtScore(-diff))
                     else -> stringResource(R.string.score_draw)
                 },
                 fontSize = 14.sp,
