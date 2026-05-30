@@ -55,6 +55,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
 import org.snailtrail.androidgo.engine.EngineManager
 import org.snailtrail.androidgo.engine.EngineType
+import org.snailtrail.androidgo.game.BoardState
 import org.snailtrail.androidgo.game.GoGame
 import org.snailtrail.androidgo.game.PrefKeys
 import org.snailtrail.androidgo.game.SgfConstants
@@ -174,8 +175,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(boardState.gameOver) {
             if (boardState.gameOver) {
                 withContext(Dispatchers.IO) {
-                    val engine = engineManager.getEngine()
-                    val dead = engine?.getDeadStones() ?: emptySet()
+                    val dead = getDeadStonesForScoring(boardState)
                     withContext(Dispatchers.Main) {
                         currentScore = goGame.countTerritory(dead)
                         showScore = true
@@ -294,7 +294,7 @@ class MainActivity : ComponentActivity() {
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
                                     lifecycleScope.launch(Dispatchers.IO) {
-                                        val deadStones = engineManager.getEngine()?.getDeadStones() ?: emptySet()
+                                        val deadStones = getDeadStonesForScoring(boardState)
                                         withContext(Dispatchers.Main) {
                                             currentScore = goGame.countTerritory(deadStones)
                                             showScore = true
@@ -527,6 +527,8 @@ class MainActivity : ComponentActivity() {
                 val ok = withContext(Dispatchers.IO) { engine.generateMove(aiBlack) }
 
                 if (ok) {
+                    // Natural-feeling delay before AI places its stone
+                    kotlinx.coroutines.delay(500)
                     val moveStr = engine.getLastGeneratedMove()
                     val (aiRow, aiCol) = gtpToBoardPos(moveStr, state.size)
                     if (aiRow >= 0 && aiCol >= 0) {
@@ -587,6 +589,28 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         engineManager.close()
+    }
+
+    private suspend fun getDeadStonesForScoring(state: BoardState): Set<Pair<Int, Int>> {
+        // Try existing engine first
+        engineManager.getEngine()?.let { engine ->
+            return try { engine.getDeadStones() } catch (_: Exception) { emptySet() }
+        }
+        // Human vs Human: start temporary KataGo for dead stone detection
+        val tempMgr = EngineManager(applicationContext)
+        return try {
+            tempMgr.ensureEngine(EngineType.KataGo, 5)
+            val engine = tempMgr.getEngine()!!
+            engine.init(state.size, 3.75f)
+            for ((pos, color) in state.stones) {
+                engine.playMove(pos.first, pos.second, color == StoneColor.Black)
+            }
+            engine.getDeadStones()
+        } catch (_: Exception) {
+            emptySet()
+        } finally {
+            tempMgr.close()
+        }
     }
 
     private fun loadConfigFromPrefs(prefs: android.content.SharedPreferences): NewGameConfig {
@@ -662,12 +686,12 @@ private fun BottomBar(
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onScore, enabled = hasMoves,
+            onClick = onScore, enabled = hasMoves && !aiThinking,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onEnd, enabled = !gameOver,
+            onClick = onEnd, enabled = !gameOver && !aiThinking,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
