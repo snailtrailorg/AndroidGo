@@ -173,11 +173,11 @@ class MainActivity : ComponentActivity() {
         // Auto-show score when game ends
         LaunchedEffect(boardState.gameOver) {
             if (boardState.gameOver) {
+                showScore = true
                 withContext(Dispatchers.IO) {
                     val dead = getDeadStonesForScoring(boardState)
                     withContext(Dispatchers.Main) {
                         currentScore = goGame.countTerritory(dead)
-                        showScore = true
                     }
                 }
             }
@@ -293,11 +293,11 @@ class MainActivity : ComponentActivity() {
                                     showScore = false
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
+                                    showScore = true  // disable buttons immediately
                                     lifecycleScope.launch(Dispatchers.IO) {
                                         val deadStones = getDeadStonesForScoring(boardState)
                                         withContext(Dispatchers.Main) {
                                             currentScore = goGame.countTerritory(deadStones)
-                                            showScore = true
                                             scoringInFlight = false
                                         }
                                     }
