@@ -251,7 +251,8 @@ class MainActivity : ComponentActivity() {
                             ScoreCard(
                                 score = currentScore!!,
                                 blackName = blackConfig.name,
-                                whiteName = whiteConfig.name
+                                whiteName = whiteConfig.name,
+                                boardSize = boardState.size
                             )
                         }
 
@@ -722,7 +723,7 @@ private fun BottomBar(
 // ── Score card ──
 
 @Composable
-private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String) {
+private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, boardSize: Int) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -743,7 +744,8 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
                 stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore)),
                 fontSize = 14.sp
             )
-            val diff = score.blackScore - score.whiteScore
+            // Chinese rules: 黑胜子数 = 黑总子 - 贴子(还子) - 半盘
+            val diff = score.blackScore - score.komi - (boardSize * boardSize) / 2f
             Text(
                 text = when {
                     diff > 0 -> stringResource(R.string.score_black_leads, blackName, fmtScore(diff))
