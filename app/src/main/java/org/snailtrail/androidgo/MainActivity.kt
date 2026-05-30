@@ -170,14 +170,16 @@ class MainActivity : ComponentActivity() {
             (boardState.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
         )
 
-        // Auto-show score when game ends
+        // Auto-show score when game ends (avoid race with manual score button)
         LaunchedEffect(boardState.gameOver) {
-            if (boardState.gameOver) {
+            if (boardState.gameOver && !scoringInFlight) {
+                scoringInFlight = true
                 showScore = true
                 withContext(Dispatchers.IO) {
                     val dead = getDeadStonesForScoring(boardState)
                     withContext(Dispatchers.Main) {
                         currentScore = goGame.countTerritory(dead)
+                        scoringInFlight = false
                     }
                 }
             }
