@@ -26,8 +26,8 @@
     <!-- Score Card -->
     <string name="score_black">黑 %1$s: %2$d子 + %3$d空 = %4$s</string>
     <string name="score_white">白 %1$s: %2$d子 + %3$d空 + %4$s贴 = %5$s</string>
-    <string name="score_black_leads">黑 %1$s 领先 %2$s 目</string>
-    <string name="score_white_leads">白 %1$s 领先 %2$s 目</string>
+    <string name="score_black_leads">黑 %1$s 领先 %2$s 子</string>
+    <string name="score_white_leads">白 %1$s 领先 %2$s 子</string>
     <string name="score_black_wins">黑 %1$s 胜 %2$s 子</string>
     <string name="score_white_wins">白 %1$s 胜 %2$s 子</string>
     <string name="score_draw">平局</string>
