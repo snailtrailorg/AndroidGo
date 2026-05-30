@@ -33,7 +33,7 @@
     <string name="score_draw">平局</string>
 
     <!-- About Dialog -->
-    <string name="about_title">关于 AndroidGo</string>
+    <string name="about_title">关于 安卓围棋</string>
     <string name="about_version">版本 1.0</string>
     <string name="about_desc">Android 围棋应用 · Jetpack Compose</string>
     <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
