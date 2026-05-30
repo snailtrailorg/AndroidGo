@@ -328,6 +328,8 @@ class MainActivity : ComponentActivity() {
                         onConfirm = { config ->
                             showNewGameDialog = false
                             showScore = false
+                            currentScore = null
+                            scoringInFlight = false
                             startNewGame(config) { aiThinking = it }
                         },
                         onDismiss = { showNewGameDialog = false }
@@ -341,6 +343,9 @@ class MainActivity : ComponentActivity() {
                     onLoad = { parsed, file ->
                         aiEngineReady.set(false)
                         engineManager.close()
+                        showScore = false
+                        currentScore = null
+                        scoringInFlight = false
                         // Keep current AI config, only update names from SGF
                         if (parsed.blackName.isNotEmpty()) blackConfig = blackConfig.copy(name = parsed.blackName)
                         if (parsed.whiteName.isNotEmpty()) whiteConfig = whiteConfig.copy(name = parsed.whiteName)
