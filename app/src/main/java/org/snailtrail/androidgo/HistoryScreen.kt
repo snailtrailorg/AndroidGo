@@ -218,6 +218,7 @@ fun ReviewScreen(
     val boardState = remember(game, displayIndex) {
         game.reset(boardSize)
         game.setKomi(komi)
+        if (handicap > 0) game.setHandicap(handicap)
         for (i in 0 until displayIndex.coerceAtMost(moves.size)) {
             val (row, col) = moves[i]
             if (row < 0) game.pass()

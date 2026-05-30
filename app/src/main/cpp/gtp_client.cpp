@@ -439,6 +439,7 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
     }
 
     bool success = (firstChar == '=');
+    m_interrupted = false;  // clear stale interrupt flag on successful read
 
     // Strip leading "= " or "? " and trailing "\n\n"
     size_t start = 1;
