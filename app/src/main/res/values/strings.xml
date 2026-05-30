@@ -20,6 +20,7 @@
     <string name="btn_undo">Undo</string>
     <string name="btn_redo">Redo</string>
     <string name="btn_score">Count</string>
+    <string name="btn_continue">Continue</string>
     <string name="btn_end">End</string>
 
     <!-- Score Card -->
