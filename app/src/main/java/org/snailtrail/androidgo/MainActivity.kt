@@ -253,6 +253,7 @@ class MainActivity : ComponentActivity() {
                             gameOver = boardState.gameOver,
                             aiThinking = aiThinking,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
+                            showScore = showScore,
                             onPass = {
                                 if (aiThinking) {
                                     // Just interrupt — the running genmove will return naturally
@@ -658,6 +659,7 @@ private fun BottomBar(
     gameOver: Boolean,
     aiThinking: Boolean,
     hasMoves: Boolean,
+    showScore: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onRedo: () -> Unit,
@@ -671,17 +673,17 @@ private fun BottomBar(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Button(
-            onClick = onPass, enabled = !gameOver,
+            onClick = onPass, enabled = !gameOver && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(if (aiThinking) R.string.btn_interrupt else R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking,
+            onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onRedo, enabled = hasMoves && !gameOver && !aiThinking,
+            onClick = onRedo, enabled = hasMoves && !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
@@ -689,9 +691,9 @@ private fun BottomBar(
             onClick = onScore, enabled = hasMoves && !aiThinking,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
+        ) { Text(stringResource(if (showScore) R.string.btn_continue else R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onEnd, enabled = !gameOver && !aiThinking,
+            onClick = onEnd, enabled = !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
