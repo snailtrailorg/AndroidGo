@@ -191,7 +191,7 @@ class GoGameTest {
         val game = GoGame(19)
         val score = game.countTerritory()
         assertEquals(3.75f, score.komi)
-        assertEquals(3.75f, score.whiteScore)
+        assertEquals(0f, score.whiteScore) // whiteScore is raw, komi applied separately
     }
 
     @Test fun `dead stone excluded from stone count`() {
