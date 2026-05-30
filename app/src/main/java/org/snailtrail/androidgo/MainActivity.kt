@@ -393,8 +393,11 @@ class MainActivity : ComponentActivity() {
                         parsed.moves.addAll(reviewMoves)
                         aiEngineReady.set(false)
                         engineManager.close()
-                        blackConfig = PlayerConfig(name = getString(R.string.default_black_name))
-                        whiteConfig = PlayerConfig(name = getString(R.string.default_white_name))
+                        showScore = false
+                        currentScore = null
+                        scoringInFlight = false
+                        if (parsed.blackName.isNotEmpty()) blackConfig = blackConfig.copy(name = parsed.blackName)
+                        if (parsed.whiteName.isNotEmpty()) whiteConfig = whiteConfig.copy(name = parsed.whiteName)
                         goGame.reset(reviewSize)
                         goGame.setKomi(reviewKomi)
                         for ((row, col) in reviewMoves) {
