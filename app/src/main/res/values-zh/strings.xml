@@ -69,7 +69,9 @@
     <string name="history_empty">暂无保存的棋谱</string>
     <string name="history_board_size">%1$d路</string>
     <string name="history_moves">%1$d手</string>
+    <string name="history_entry_line">%1$s · %2$d路 · %3$d手</string>
     <string name="history_entry_desc">%1$s · %2$s</string>
+    <string name="history_delete">删除</string>
     <string name="history_load">加载</string>
     <string name="history_review">复盘</string>
     <string name="history_back">返回</string>
