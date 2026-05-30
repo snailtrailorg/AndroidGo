@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity() {
         var reviewMoves by remember { mutableStateOf<List<Pair<Int, Int>>>(emptyList()) }
         var reviewIndex by remember { mutableIntStateOf(0) }
         var reviewSize by remember { mutableIntStateOf(19) }
-        var reviewKomi by remember { mutableStateOf(6.5f) }
+        var reviewKomi by remember { mutableStateOf(3.75f) }
         var reviewHandicap by remember { mutableIntStateOf(0) }
 
         val aiActive = blackConfig.role == PlayerRole.AI || whiteConfig.role == PlayerRole.AI

@@ -182,10 +182,11 @@ class GoGame(initialSize: Int = 19) {
             stones[allPlacements[i]] = StoneColor.Black  // weaker player takes Black
         }
 
-        // Chinese rule: handicap → Black gets stones, White plays first, no komi
+        // Chinese rule: handicap → Black gets stones, White plays first, 还子 = n/2
         _state.value = _state.value.copy(
             stones = stones,
             handicap = n,
+            komi = n / 2f,
             currentPlayer = StoneColor.White,
             moveHistory = emptyList(),
             redoStack = emptyList(),
@@ -266,8 +267,7 @@ class GoGame(initialSize: Int = 19) {
         // Chinese area scoring: live stones + territory
         val blackStones = s.stones.count { it.value == StoneColor.Black && (it.key !in deadStones) }
         val whiteStones = s.stones.count { it.value == StoneColor.White && (it.key !in deadStones) }
-        // Komi: 3.75 for even game; handicap → 还子 = handicap/2
-        val komi = if (s.handicap == 0) 3.75f else (s.handicap / 2f)
+        val komi = s.komi
         val blackScore = blackStones + blackTerritory
         val whiteScore = whiteStones + whiteTerritory + komi
 

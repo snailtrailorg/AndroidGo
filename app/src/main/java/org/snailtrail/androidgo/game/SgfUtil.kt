@@ -84,7 +84,7 @@ object SgfUtil {
             for ((key, value) in node.properties) {
                 when (key) {
                     "SZ" -> result.boardSize = value.toIntOrNull() ?: 19
-                    "KM" -> result.komi = value.toFloatOrNull() ?: 6.5f
+                    "KM" -> result.komi = value.toFloatOrNull() ?: 3.75f
                     "HA" -> result.handicap = value.toIntOrNull() ?: 0
                     "PB" -> result.blackName = value
                     "PW" -> result.whiteName = value
@@ -186,7 +186,7 @@ object SgfUtil {
 
 data class ParsedSgf(
     var boardSize: Int = 19,
-    var komi: Float = 6.5f,
+    var komi: Float = 3.75f,
     var handicap: Int = 0,
     var blackName: String = "",
     var whiteName: String = "",
