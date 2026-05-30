@@ -164,8 +164,10 @@ class GoGameTest {
         game.setHandicap(2)
         assertEquals(2, game.state.value.stones.size)
         assertEquals(2, game.state.value.handicap)
-        // Black plays first after handicap
-        assertEquals(StoneColor.Black, game.state.value.currentPlayer)
+        // White plays first after handicap (White gave handicap)
+        assertEquals(StoneColor.White, game.state.value.currentPlayer)
+        // Handicap stones are Black
+        game.state.value.stones.values.forEach { assertEquals(StoneColor.Black, it) }
     }
 
     @Test fun `handicap 9 places all stones`() {
@@ -187,10 +189,9 @@ class GoGameTest {
 
     @Test fun `komi included in score`() {
         val game = GoGame(19)
-        game.setKomi(6.5f)
         val score = game.countTerritory()
-        assertEquals(6.5f, score.komi)
-        assertEquals(6.5f, score.whiteScore)
+        assertEquals(3.75f, score.komi)
+        assertEquals(3.75f, score.whiteScore)
     }
 
     @Test fun `dead stone excluded from stone count`() {
@@ -266,7 +267,7 @@ class SgfUtilTest {
 
     @Test fun `export and import roundtrip`() {
         val game = GoGame(13)
-        game.setKomi(7.5f)
+        game.setKomi(3.75f)
         game.placeStone(6, 6) // B
         game.placeStone(6, 7) // W
         game.placeStone(7, 6) // B
@@ -280,7 +281,7 @@ class SgfUtilTest {
         val parsed = SgfUtil.parseFromFile(file)
         assertNotNull(parsed)
         assertEquals(13, parsed!!.boardSize)
-        assertEquals(7.5f, parsed.komi)
+        assertEquals(3.75f, parsed.komi)
         // 3 stones + 2 passes = 5 moves
         assertEquals(5, parsed.moves.size)
         // Verify pass moves

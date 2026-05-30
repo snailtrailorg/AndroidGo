@@ -114,7 +114,6 @@ class MainActivity : ComponentActivity() {
 
         if (!restored) {
             goGame.reset(savedConfig.boardSize)
-            goGame.setKomi(savedConfig.komi)
             if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
         }
 
@@ -399,7 +398,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startNewGame(config: NewGameConfig, aiThinkingState: (Boolean) -> Unit) {
-        Log.d(TAG, "startNewGame: size=${config.boardSize}, komi=${config.komi}")
+        Log.d(TAG, "startNewGame: size=${config.boardSize}, handicap=${config.handicap}")
         blackConfig = config.blackPlayer
         whiteConfig = config.whitePlayer
         aiEngineReady.set(false)
@@ -407,7 +406,6 @@ class MainActivity : ComponentActivity() {
         engineManager.close()
 
         goGame.reset(config.boardSize)
-        goGame.setKomi(config.komi)
 
         if (config.handicap > 0) {
             goGame.setHandicap(config.handicap)
@@ -419,7 +417,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val aiPlayer = if (blackConfig.role == PlayerRole.AI) blackConfig else whiteConfig
-                initAiEngine(aiPlayer, config.boardSize, config.komi)
+                initAiEngine(aiPlayer, config.boardSize, 3.75f)
 
                 // If AI plays first (AI vs Human), generate its move
                 val state = goGame.state.value
@@ -598,7 +596,6 @@ class MainActivity : ComponentActivity() {
         }
         return NewGameConfig(
             boardSize = prefs.getInt(PrefKeys.BOARD_SIZE, 13).coerceIn(9, 19),
-            komi = prefs.getFloat(PrefKeys.KOMI, 7.5f),
             handicap = prefs.getInt(PrefKeys.HANDICAP, 0).coerceIn(0, 9),
             blackPlayer = PlayerConfig(
                 role = enumValue(PrefKeys.BLACK_ROLE, PlayerRole.Human),
