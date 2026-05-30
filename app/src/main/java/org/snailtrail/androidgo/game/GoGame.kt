@@ -264,21 +264,20 @@ class GoGame(initialSize: Int = 19) {
             }
         }
 
-        // Chinese area scoring: live stones + territory
+        // Chinese area scoring: live stones + territory (komi applied separately)
         val blackStones = s.stones.count { it.value == StoneColor.Black && (it.key !in deadStones) }
         val whiteStones = s.stones.count { it.value == StoneColor.White && (it.key !in deadStones) }
-        val komi = s.komi
-        val blackScore = blackStones + blackTerritory
-        val whiteScore = whiteStones + whiteTerritory + komi
+        val blackRaw = (blackStones + blackTerritory).toFloat()
+        val whiteRaw = (whiteStones + whiteTerritory).toFloat()
 
         return TerritoryScore(
             blackStones = blackStones,
             whiteStones = whiteStones,
             blackTerritory = blackTerritory,
             whiteTerritory = whiteTerritory,
-            blackScore = blackScore.toFloat(),
-            whiteScore = whiteScore.toFloat(),
-            komi = komi,
+            blackScore = blackRaw,
+            whiteScore = whiteRaw,
+            komi = s.komi,
             territoryMap = territoryMap
         )
     }

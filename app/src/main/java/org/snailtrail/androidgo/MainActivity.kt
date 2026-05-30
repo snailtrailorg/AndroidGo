@@ -252,8 +252,7 @@ class MainActivity : ComponentActivity() {
                                 score = currentScore!!,
                                 blackName = blackConfig.name,
                                 whiteName = whiteConfig.name,
-                                endGame = boardState.gameOver,
-                                boardSize = boardState.size
+                                endGame = boardState.gameOver
                             )
                         }
 
@@ -305,7 +304,7 @@ class MainActivity : ComponentActivity() {
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
                                     showScore = true
-                                    currentScore = null  // trigger spinner
+                                    currentScore = null
                                     lifecycleScope.launch(Dispatchers.IO) {
                                         val deadStones = getDeadStonesForScoring(boardState)
                                         withContext(Dispatchers.Main) {
@@ -724,7 +723,7 @@ private fun BottomBar(
 // ── Score card ──
 
 @Composable
-private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGame: Boolean = false, boardSize: Int = 19) {
+private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGame: Boolean = false) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -742,11 +741,11 @@ private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: Strin
                 fontSize = 14.sp
             )
             Text(
-                stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore)),
+                stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore + score.komi)),
                 fontSize = 14.sp
             )
-            val diff = if (endGame) score.blackScore - score.komi - (boardSize * boardSize) / 2f
-                       else score.blackScore - score.whiteScore
+            // Chinese formula: (black - white) / 2 - komi
+            val diff = (score.blackScore - score.whiteScore) / 2f - score.komi
             Text(
                 text = when {
                     diff > 0 -> stringResource(if (endGame) R.string.score_black_wins else R.string.score_black_leads, blackName, fmtScore(diff))
