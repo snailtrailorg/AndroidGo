@@ -24,7 +24,7 @@ object SgfUtil {
             sb.append("\n")
         }
 
-        var blackTurn = true
+        var blackTurn = state.handicap == 0
         for (move in state.moveHistory) {
             val color = if (blackTurn) "B" else "W"
             if (move.isPass) {

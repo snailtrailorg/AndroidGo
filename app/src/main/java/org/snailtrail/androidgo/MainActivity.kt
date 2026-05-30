@@ -261,6 +261,7 @@ class MainActivity : ComponentActivity() {
                             gameOver = boardState.gameOver,
                             aiThinking = aiThinking,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
+                            canRedo = boardState.redoStack.isNotEmpty(),
                             showScore = showScore,
                             scoringInFlight = scoringInFlight,
                             onPass = {
@@ -464,7 +465,8 @@ class MainActivity : ComponentActivity() {
                                 aiEngineReady.set(false)
                             }
                         }
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        Log.e(TAG, "AI engine crashed", e)
                         engineManager.close()
                         aiEngineReady.set(false)
                     }
@@ -681,6 +683,7 @@ private fun BottomBar(
     gameOver: Boolean,
     aiThinking: Boolean,
     hasMoves: Boolean,
+    canRedo: Boolean = false,
     showScore: Boolean = false,
     scoringInFlight: Boolean = false,
     onPass: () -> Unit,
@@ -706,7 +709,7 @@ private fun BottomBar(
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onRedo, enabled = hasMoves && !gameOver && !aiThinking && !showScore,
+            onClick = onRedo, enabled = canRedo && !gameOver && !aiThinking && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }

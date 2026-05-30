@@ -56,7 +56,7 @@ class EngineManager(private val context: Context) {
         val ok = e.start(cmd)
 
         Log.d(TAG, "Engine start result: $ok, name=${e.state.value.engineName}")
-        check(ok) { "Failed to start ${type.name} engine" }
+        if (!ok) { e.close(); check(false) { "Failed to start ${type.name} engine" } }
 
         currentType = type
         engine = e
