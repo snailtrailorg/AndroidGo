@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +64,9 @@ private data class SgfEntry(
     val name: String,
     val boardSize: Int,
     val moveCount: Int,
-    val date: String
+    val date: String,
+    val blackName: String = "",
+    val whiteName: String = ""
 )
 
 @Composable
@@ -73,7 +77,8 @@ fun HistoryScreen(
     onDelete: (File) -> Unit,
     onBack: () -> Unit
 ) {
-    val entries = remember {
+    var refreshKey by remember { mutableIntStateOf(0) }
+    val entries = remember(refreshKey) {
         val list = mutableListOf<SgfEntry>()
         sgfDir.mkdirs()
         sgfDir.listFiles()?.filter { it.extension.equals("sgf", ignoreCase = true) }
@@ -90,7 +95,9 @@ fun HistoryScreen(
                     name = name,
                     boardSize = parsed?.boardSize ?: 19,
                     moveCount = parsed?.moves?.size ?: 0,
-                    date = date
+                    date = date,
+                    blackName = parsed?.blackName ?: "",
+                    whiteName = parsed?.whiteName ?: ""
                 ))
             }
         list
@@ -146,25 +153,39 @@ fun HistoryScreen(
                                         entry.date.ifEmpty { entry.name },
                                         entry.boardSize, entry.moveCount),
                                     fontSize = 14.sp)
+                                if (entry.blackName.isNotEmpty() || entry.whiteName.isNotEmpty()) {
+                                    Text(
+                                        stringResource(R.string.history_players,
+                                            entry.blackName.ifEmpty { "?" },
+                                            entry.whiteName.ifEmpty { "?" }),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                                    horizontalArrangement = Arrangement.End
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                                 ) {
-                                    OutlinedButton(onClick = {
+                                    Button(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onLoad(parsed, entry.file)
-                                    }, contentPadding = ButtonDefaults.TextButtonContentPadding) {
+                                    },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
                                         Text(stringResource(R.string.history_load), fontSize = 12.sp)
                                     }
                                     Button(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onReview(parsed)
-                                    }, contentPadding = ButtonDefaults.TextButtonContentPadding) {
+                                    },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
                                         Text(stringResource(R.string.history_review), fontSize = 12.sp)
                                     }
-                                    TextButton(onClick = { onDelete(entry.file) }) {
+                                    Button(onClick = { onDelete(entry.file); refreshKey++ },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
                                         Text(stringResource(R.string.history_delete), fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.error)
+                                            color = Color(0xFFC62828))
                                     }
                                 }
                             }
@@ -184,6 +205,7 @@ fun ReviewScreen(
     boardSize: Int,
     komi: Float,
     currentIndex: Int,
+    handicap: Int = 0,
     blackName: String = "",
     whiteName: String = "",
     onIndexChange: (Int) -> Unit,
@@ -204,7 +226,8 @@ fun ReviewScreen(
         game.state.value
     }
 
-    val currentColor = if (displayIndex % 2 == 0) StoneColor.Black else StoneColor.White
+    val blackFirst = handicap == 0
+    val currentColor = if ((displayIndex % 2 == 0) == blackFirst) StoneColor.Black else StoneColor.White
     val isEnd = displayIndex >= moves.size
     val navButtonColors = ButtonDefaults.buttonColors(
         disabledContainerColor = ButtonDefaults.buttonColors().containerColor.copy(alpha = 0.35f),
@@ -284,15 +307,15 @@ fun ReviewScreen(
             Button(
                 onClick = { displayIndex = 0 },
                 enabled = displayIndex > 0,
-                modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
             ) { Text("⏮", fontSize = 16.sp) }
             Button(
                 onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) },
                 enabled = displayIndex > 0,
-                modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
             ) { Text("◀", fontSize = 16.sp) }
             Text(
@@ -303,15 +326,15 @@ fun ReviewScreen(
             Button(
                 onClick = { displayIndex = (displayIndex + 1).coerceAtMost(moves.size) },
                 enabled = displayIndex < moves.size,
-                modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
             ) { Text("▶", fontSize = 16.sp) }
             Button(
                 onClick = { displayIndex = moves.size },
                 enabled = displayIndex < moves.size,
-                modifier = Modifier.weight(1f),
-                contentPadding = ButtonDefaults.TextButtonContentPadding,
+                modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
             ) { Text("⏭", fontSize = 16.sp) }
             }
