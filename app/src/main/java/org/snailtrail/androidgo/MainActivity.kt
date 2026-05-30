@@ -223,8 +223,8 @@ class MainActivity : ComponentActivity() {
                             GoBoardScreen(
                                 boardState = boardState,
                                 onCellClick = { row, col ->
-                                    if (aiThinking) {
-                                        engineManager.getEngine()?.interrupt()
+                                    if (aiThinking || showScore || scoringInFlight) {
+                                        if (aiThinking) engineManager.getEngine()?.interrupt()
                                         return@GoBoardScreen
                                     }
                                     val curState = goGame.state.value
@@ -419,7 +419,8 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val aiPlayer = if (blackConfig.role == PlayerRole.AI) blackConfig else whiteConfig
-                initAiEngine(aiPlayer, config.boardSize, 3.75f)
+                val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
+                initAiEngine(aiPlayer, config.boardSize, engKomi)
 
                 // If AI plays first (AI vs Human), generate its move
                 val state = goGame.state.value
@@ -603,7 +604,7 @@ class MainActivity : ComponentActivity() {
         return try {
             tempMgr.ensureEngine(EngineType.KataGo, 5)
             val engine = tempMgr.getEngine()!!
-            engine.init(state.size, 3.75f)
+            engine.init(state.size, state.komi)
             for ((pos, color) in state.stones) {
                 engine.playMove(pos.first, pos.second, color == StoneColor.Black)
             }
