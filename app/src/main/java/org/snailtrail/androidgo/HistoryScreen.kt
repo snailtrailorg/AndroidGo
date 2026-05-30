@@ -150,14 +150,18 @@ fun HistoryScreen(
                                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                                     horizontalArrangement = Arrangement.End
                                 ) {
-                                    TextButton(onClick = {
+                                    OutlinedButton(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onLoad(parsed, entry.file)
-                                    }) { Text(stringResource(R.string.history_load), fontSize = 12.sp) }
-                                    TextButton(onClick = {
+                                    }, contentPadding = ButtonDefaults.TextButtonContentPadding) {
+                                        Text(stringResource(R.string.history_load), fontSize = 12.sp)
+                                    }
+                                    Button(onClick = {
                                         val parsed = SgfUtil.parseFromFile(entry.file)
                                         if (parsed != null) onReview(parsed)
-                                    }) { Text(stringResource(R.string.history_review), fontSize = 12.sp) }
+                                    }, contentPadding = ButtonDefaults.TextButtonContentPadding) {
+                                        Text(stringResource(R.string.history_review), fontSize = 12.sp)
+                                    }
                                     TextButton(onClick = { onDelete(entry.file) }) {
                                         Text(stringResource(R.string.history_delete), fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.error)
