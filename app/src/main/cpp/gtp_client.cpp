@@ -206,9 +206,6 @@ bool GtpClient::start(const std::string &command) {
     if (handle) {
         auto* gtpmain = (int(*)(int, const char**, int, int))
             dlsym(handle, "katago_gtp_main");
-        if (!gtpmain)
-            gtpmain = (int(*)(int, const char**, int, int))
-                dlsym(handle, "gnugo_gtp_main");
         if (gtpmain) {
             GTP_LOG("using in-process thread mode");
             // Create pipe pair: stdin for GTP commands, stdout for responses
