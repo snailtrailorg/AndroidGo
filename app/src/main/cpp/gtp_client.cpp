@@ -200,6 +200,9 @@ bool GtpClient::start(const std::string &command) {
 
     // Try in-process thread mode — supports both KataGo and GNU Go
     void* handle = dlopen(args[0].c_str(), RTLD_NOW | RTLD_LOCAL);
+    if (!handle) {
+        GTP_LOG("dlopen failed: %s", dlerror());
+    }
     if (handle) {
         auto* gtpmain = (int(*)(int, const char**, int, int))
             dlsym(handle, "katago_gtp_main");
