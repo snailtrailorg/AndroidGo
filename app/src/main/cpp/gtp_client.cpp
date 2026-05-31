@@ -198,11 +198,14 @@ bool GtpClient::start(const std::string &command) {
     std::string token;
     while (iss >> token) { args.push_back(token); }
 
-    // Try in-process thread mode (方案1: no fork, no cgroup issue)
+    // Try in-process thread mode — supports both KataGo and GNU Go
     void* handle = dlopen(args[0].c_str(), RTLD_NOW | RTLD_LOCAL);
     if (handle) {
         auto* gtpmain = (int(*)(int, const char**, int, int))
             dlsym(handle, "katago_gtp_main");
+        if (!gtpmain)
+            gtpmain = (int(*)(int, const char**, int, int))
+                dlsym(handle, "gnugo_gtp_main");
         if (gtpmain) {
             GTP_LOG("using in-process thread mode");
             // Create pipe pair: stdin for GTP commands, stdout for responses
