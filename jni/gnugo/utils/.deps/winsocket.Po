@@ -1,0 +1,5 @@
+winsocket.o: winsocket.c /usr/include/stdc-predef.h winsocket.h \
+ ../config.h
+/usr/include/stdc-predef.h:
+winsocket.h:
+../config.h:

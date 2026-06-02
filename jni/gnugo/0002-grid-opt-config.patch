@@ -1,0 +1,8 @@
+--- a/patterns/patterns.h
++++ b/patterns/patterns.h
+@@ -50,7 +50,7 @@
+-#define GRID_OPT 0
++/* #define GRID_OPT 0 -- now controlled by config.h */
+ 
+ #ifndef GRID_OPT
+ #error GRID_OPT should be defined as 0, 1 or 2
