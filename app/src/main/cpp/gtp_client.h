@@ -51,9 +51,6 @@ public:
 
     // Lifecycle
     bool start(const std::string &command);
-    // Attach to an already-running process (started via ProcessBuilder).
-    // Takes ownership of the fds — caller must not close them.
-    bool attachToProcess(int pid, int stdinFd, int stdoutFd);
     void stop();
     bool isRunning() const;
 
@@ -86,6 +83,7 @@ public:
     std::string finalScore();
     std::string estimatedScore();
     std::vector<Stone> deadStones();
+    std::string kataAnalyze(int maxVisits);  // KataGo-specific: returns JSON ownership
     std::vector<Stone> bestMoves(bool black);
     std::vector<Stone> legalMoves(bool black);
     std::vector<Stone> liberties(const Stone &stone);
@@ -102,14 +100,12 @@ public:
     ClientCallbacks callbacks;
 
 private:
-    // Process/thread management
-    int m_pid = -1;
+    // Pipe and thread management
     int m_stdinFd = -1;
     int m_stdoutFd = -1;
     bool m_running = false;
     void* m_engineHandle = nullptr;
     pthread_t m_engineThread = 0;
-    bool m_useThread = false;  // true = in-process thread, false = fork+exec
 
     // Engine info
     std::string m_engineName;
@@ -141,8 +137,7 @@ private:
     // Interrupt flag — set by interrupt(), checked in readResponse
     std::atomic<bool> m_interrupted{false};
 
-    // Process helpers
-    static bool spawnProcess(const std::string &command, int &pid, int &inFd, int &outFd);
+    // Thread helpers
     void killProcess();
 
     // Undo helpers

@@ -64,6 +64,7 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
+import org.snailtrail.androidgo.game.parseKataOwnership
 import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
@@ -86,6 +87,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var whiteConfig: PlayerConfig
     private val aiEngineReady = AtomicBoolean(false)
     private val aiEngineInitializing = AtomicBoolean(false)
+    private val aiGeneration = java.util.concurrent.atomic.AtomicInteger(0)
+    private val aiMoveInFlight = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -130,6 +133,7 @@ class MainActivity : ComponentActivity() {
     private fun MainScreen() {
         val boardState by goGame.state.collectAsState()
         var aiThinking by remember { mutableStateOf(false) }
+        var engineInitializing by remember { mutableStateOf(false) }
         var initialAiTriggered by remember { mutableStateOf(false) }
 
         // Trigger initial AI move if AI plays first
@@ -171,7 +175,7 @@ class MainActivity : ComponentActivity() {
             (boardState.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
         )
 
-        // Auto-show score when game ends (avoid race with manual score button)
+        // End-game: auto-score with dead stone detection via KataGo
         LaunchedEffect(boardState.gameOver) {
             if (boardState.gameOver && !scoringInFlight) {
                 scoringInFlight = true
@@ -225,7 +229,7 @@ class MainActivity : ComponentActivity() {
                             GoBoardScreen(
                                 boardState = boardState,
                                 onCellClick = { row, col ->
-                                    if (aiThinking || showScore || scoringInFlight) {
+                                    if (aiThinking || showScore || scoringInFlight || engineInitializing) {
                                         return@GoBoardScreen
                                     }
                                     val curState = goGame.state.value
@@ -239,6 +243,30 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                                 territoryMap = if (showScore) currentScore?.territoryMap ?: emptyMap() else emptyMap()
                             )
+
+                            // ── Engine initializing overlay ──
+                            if (engineInitializing) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f)
+                                        .background(Color.Black.copy(alpha = 0.25f))
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(32.dp),
+                                        strokeWidth = 3.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        stringResource(R.string.engine_starting),
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
                         }
 
                         // ── Score card / loading ──
@@ -260,6 +288,7 @@ class MainActivity : ComponentActivity() {
                         BottomBar(
                             gameOver = boardState.gameOver,
                             aiThinking = aiThinking,
+                            engineInitializing = engineInitializing,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
                             canRedo = boardState.redoStack.isNotEmpty(),
                             showScore = showScore,
@@ -302,14 +331,15 @@ class MainActivity : ComponentActivity() {
                             onScore = {
                                 if (showScore) {
                                     showScore = false
+                                    currentScore = null
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
                                     showScore = true
                                     currentScore = null
                                     lifecycleScope.launch(Dispatchers.IO) {
-                                        val deadStones = getDeadStonesForScoring(boardState)
+                                        val dead = getDeadStonesForScoring(boardState)
                                         withContext(Dispatchers.Main) {
-                                            currentScore = goGame.countTerritory(deadStones)
+                                            currentScore = goGame.countTerritory(dead)
                                             scoringInFlight = false
                                         }
                                     }
@@ -332,7 +362,11 @@ class MainActivity : ComponentActivity() {
                             showScore = false
                             currentScore = null
                             scoringInFlight = false
-                            startNewGame(config) { aiThinking = it }
+                            engineInitializing = true
+                            startNewGame(config,
+                                aiThinkingState = { aiThinking = it },
+                                onEngineReady = { engineInitializing = false }
+                            )
                         },
                         onDismiss = { showNewGameDialog = false }
                     )
@@ -417,8 +451,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startNewGame(config: NewGameConfig, aiThinkingState: (Boolean) -> Unit) {
-        Log.d(TAG, "startNewGame: size=${config.boardSize}, handicap=${config.handicap}")
+    private fun startNewGame(config: NewGameConfig, aiThinkingState: (Boolean) -> Unit, onEngineReady: () -> Unit) {
+        aiGeneration.incrementAndGet()
         blackConfig = config.blackPlayer
         whiteConfig = config.whitePlayer
         aiEngineReady.set(false)
@@ -432,7 +466,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val aiActive = blackConfig.role == PlayerRole.AI || whiteConfig.role == PlayerRole.AI
-        if (!aiActive) return
+        if (!aiActive) { onEngineReady(); return }
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -440,41 +474,21 @@ class MainActivity : ComponentActivity() {
                 val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
                 initAiEngine(aiPlayer, config.boardSize, engKomi)
 
-                // If AI plays first, generate its move
-                val state = goGame.state.value
-                val aiFirst = (state.currentPlayer == StoneColor.Black && blackConfig.role == PlayerRole.AI)
-                           || (state.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
-                if (aiFirst) {
-                    val aiBlack = state.currentPlayer == StoneColor.Black
-                    withContext(Dispatchers.Main) { aiThinkingState(true) }
-                    try {
-                        val engine = engineManager.getEngine()
-                        if (engine != null) {
-                            val ok = engine.generateMove(aiBlack)
-                            if (ok) {
-                                val moveStr = engine.getLastGeneratedMove()
-                                val (aiRow, aiCol) = gtpToBoardPos(moveStr, config.boardSize)
-                                if (aiRow >= 0 && aiCol >= 0) {
-                                    withContext(Dispatchers.Main) { goGame.placeStone(aiRow, aiCol) }
-                                } else {
-                                    withContext(Dispatchers.Main) { goGame.pass() }
-                                }
-                            } else {
-                                withContext(Dispatchers.Main) { goGame.pass() }
-                                engineManager.close()
-                                aiEngineReady.set(false)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "AI engine crashed", e)
-                        engineManager.close()
-                        aiEngineReady.set(false)
+                withContext(Dispatchers.Main) {
+                    onEngineReady()
+
+                    // If AI plays first, trigger the only genmove entry point
+                    val state = goGame.state.value
+                    val aiFirst = (state.currentPlayer == StoneColor.Black && blackConfig.role == PlayerRole.AI)
+                               || (state.currentPlayer == StoneColor.White && whiteConfig.role == PlayerRole.AI)
+                    if (aiFirst) {
+                        triggerAiMove(aiThinkingState)
                     }
-                    withContext(Dispatchers.Main) { aiThinkingState(false) }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Engine start failed", e)
                 withContext(Dispatchers.Main) {
+                    onEngineReady()
                     Toast.makeText(this@MainActivity, getString(R.string.toast_ai_start_failed, e.message ?: ""), Toast.LENGTH_LONG).show()
                 }
             }
@@ -494,10 +508,12 @@ class MainActivity : ComponentActivity() {
         }
         try {
             val engineType = if (aiPlayer.engine == AiEngine.KataGo) EngineType.KataGo else EngineType.GnuGo
-            val engine = engineManager.ensureEngine(engineType, aiPlayer.difficulty)
+            Log.d(TAG, "initAiEngine: type=$engineType ready=${aiEngineReady.get()} init=${aiEngineInitializing.get()}") ;val engine = engineManager.ensureEngine(engineType, aiPlayer.difficulty)
             engine.init(boardSize, komi)
 
-            for ((pos, color) in goGame.state.value.stones) {
+            val stones = goGame.state.value.stones
+            Log.d(TAG, "initAiEngine syncing ${stones.size} stones: $stones")
+            for ((pos, color) in stones) {
                 val (row, col) = pos
                 engine.playMove(row, col, color == StoneColor.Black)
             }
@@ -512,6 +528,7 @@ class MainActivity : ComponentActivity() {
 
     private fun triggerAiMove(aiThinkingState: (Boolean) -> Unit) {
         val state = goGame.state.value
+        val gen = aiGeneration.get()
         if (state.gameOver) return
 
         val aiTurn = when (state.currentPlayer) {
@@ -520,6 +537,12 @@ class MainActivity : ComponentActivity() {
         }
         if (!aiTurn) return
 
+        if (!aiMoveInFlight.compareAndSet(false, true)) {
+            Log.d(TAG, "triggerAiMove: already in flight, skipping gen=$gen")
+            return
+        }
+
+        Log.d(TAG, "triggerAiMove start: gen=$gen currentPlayer=${state.currentPlayer} moveCount=${state.moveHistory.size}")
         lifecycleScope.launch {
             aiThinkingState(true)
             try {
@@ -533,7 +556,6 @@ class MainActivity : ComponentActivity() {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(this@MainActivity, R.string.toast_ai_not_ready, Toast.LENGTH_SHORT).show()
                     }
-                    aiThinkingState(false)
                     return@launch
                 }
 
@@ -549,11 +571,17 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val aiBlack = state.currentPlayer == StoneColor.Black
+                Log.d(TAG, "genmove from triggerAiMove: gen=$gen aiBlack=$aiBlack")
                 val ok = withContext(Dispatchers.IO) { engine.generateMove(aiBlack) }
 
                 if (ok) {
                     // Natural-feeling delay before AI places its stone
                     kotlinx.coroutines.delay(500)
+                    // Check if game was reset while we were waiting
+                    if (aiGeneration.get() != gen) {
+                        Log.d(TAG, "triggerAiMove gen=$gen DISCARDED (current gen=${aiGeneration.get()})")
+                        return@launch
+                    }
                     val moveStr = engine.getLastGeneratedMove()
                     val (aiRow, aiCol) = gtpToBoardPos(moveStr, state.size)
                     if (aiRow >= 0 && aiCol >= 0) {
@@ -568,21 +596,29 @@ class MainActivity : ComponentActivity() {
                     } else {
                         withContext(Dispatchers.Main) { goGame.pass() }
                     }
+                    // Let Compose process the board update before clearing thinking indicator.
+                    // Without this, the stone placement and aiThinking=false can merge into
+                    // one frame, sometimes skipping the board redraw.
+                    kotlinx.coroutines.delay(50)
                 } else {
+                    Log.d(TAG, "triggerAiMove gen=$gen generateMove FAILED — calling goGame.pass() as fallback")
                     withContext(Dispatchers.Main) { goGame.pass() }
                     // Engine pipe is dirty after interrupted genmove — restart fresh next turn
                     withContext(Dispatchers.IO) { engineManager.close() }
                     aiEngineReady.set(false)
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "triggerAiMove gen=$gen exception: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity, getString(R.string.toast_ai_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
                     goGame.pass()
                 }
                 withContext(Dispatchers.IO) { engineManager.close() }
                 aiEngineReady.set(false)
+            } finally {
+                aiThinkingState(false)
+                aiMoveInFlight.set(false)
             }
-            aiThinkingState(false)
         }
     }
 
@@ -617,20 +653,26 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun getDeadStonesForScoring(state: BoardState): Set<Pair<Int, Int>> {
-        // Try existing engine first
-        engineManager.getEngine()?.let { engine ->
-            return try { engine.getDeadStones() } catch (_: Exception) { emptySet() }
+        // Try the current engine first (both GNU Go and KataGo support
+        // final_status_list dead as a standard GTP command).
+        val engine = engineManager.getEngine()
+        if (engine != null) {
+            val direct = try { engine.getDeadStones() } catch (_: Exception) { null }
+            if (direct != null) return direct
         }
-        // Human vs Human: start temporary KataGo for dead stone detection
+        // Fallback: start a temporary KataGo for dead stone detection.
+        // This handles Human vs Human games or when the current engine fails.
         val tempMgr = EngineManager(applicationContext)
         return try {
             tempMgr.ensureEngine(EngineType.KataGo, 5)
-            val engine = tempMgr.getEngine()!!
-            engine.init(state.size, state.komi)
+            val e = tempMgr.getEngine()!!
+            e.init(state.size, state.komi)
             for ((pos, color) in state.stones) {
-                engine.playMove(pos.first, pos.second, color == StoneColor.Black)
+                e.playMove(pos.first, pos.second, color == StoneColor.Black)
             }
-            engine.getDeadStones()
+            e.pass(true)
+            e.pass(false)
+            e.getDeadStones()
         } catch (_: Exception) {
             emptySet()
         } finally {
@@ -674,126 +716,4 @@ private sealed class Page {
     data object Review : Page()
 }
 
-// TitleBar and GameInfoBar are in ui/ package
-
-// ── Bottom bar ──
-
-@Composable
-private fun BottomBar(
-    gameOver: Boolean,
-    aiThinking: Boolean,
-    hasMoves: Boolean,
-    canRedo: Boolean = false,
-    showScore: Boolean = false,
-    scoringInFlight: Boolean = false,
-    onPass: () -> Unit,
-    onUndo: () -> Unit,
-    onRedo: () -> Unit,
-    onScore: () -> Unit,
-    onEnd: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-        Button(
-            onClick = onPass, enabled = !gameOver && !aiThinking && !showScore,
-            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
-        Button(
-            onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking && !showScore,
-            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
-        Button(
-            onClick = onRedo, enabled = canRedo && !gameOver && !aiThinking && !showScore,
-            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
-        Button(
-            onClick = onScore, enabled = hasMoves && !aiThinking && !scoringInFlight,
-            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(if (showScore) R.string.btn_continue else R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
-        Button(
-            onClick = onEnd, enabled = !gameOver && !aiThinking && !showScore,
-            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
-    }
-}
-
-// ── Score card ──
-
-@Composable
-private fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGame: Boolean = false) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                stringResource(R.string.score_black, blackName, score.blackStones, score.blackTerritory, fmtScore(score.blackScore)),
-                fontSize = 14.sp
-            )
-            Text(
-                stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore + score.komi)),
-                fontSize = 14.sp
-            )
-            // Chinese formula: (black - white) / 2 - komi
-            val diff = (score.blackScore - score.whiteScore) / 2f - score.komi
-            Text(
-                text = when {
-                    diff > 0 -> stringResource(if (endGame) R.string.score_black_wins else R.string.score_black_leads, blackName, fmtScore(diff))
-                    diff < 0 -> stringResource(if (endGame) R.string.score_white_wins else R.string.score_white_leads, whiteName, fmtScore(-diff))
-                    else -> stringResource(R.string.score_draw)
-                },
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-private fun fmtScore(f: Float): String {
-    if (f == f.toLong().toFloat()) return "${f.toInt()}"
-    val s = String.format("%.2f", f)
-    return if (s.endsWith("0")) s.dropLast(1) else s
-}
-
-// ── About dialog ──
-
-@Composable
-private fun AboutDialog(onDismiss: () -> Unit) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.about_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.about_version), fontSize = 13.sp)
-                Text(stringResource(R.string.about_desc), fontSize = 13.sp)
-                Text(stringResource(R.string.about_engines), fontSize = 13.sp)
-                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
-                Text(stringResource(R.string.about_github), fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary)
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
-            ) { Text(stringResource(R.string.about_close)) }
-        }
-    )
-}
+// BottomBar, ScoreCard, fmtScore, AboutDialog are now in MainScreen.kt

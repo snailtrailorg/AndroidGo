@@ -37,14 +37,6 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeStart(
     return result ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeAttachToProcess(
-    JNIEnv *env, jobject /* this */, jlong ptr, jint pid, jint stdinFd, jint stdoutFd) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return JNI_FALSE;
-    return client->attachToProcess(pid, stdinFd, stdoutFd) ? JNI_TRUE : JNI_FALSE;
-}
-
 JNIEXPORT void JNICALL
 Java_org_snailtrail_androidgo_engine_GtpEngine_nativeStop(
     JNIEnv *env, jobject /* this */, jlong ptr) {
@@ -222,6 +214,14 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetStones(
         result += s.toGtp();
     }
     return env->NewStringUTF(result.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_snailtrail_androidgo_engine_GtpEngine_nativeKataAnalyze(
+    JNIEnv *env, jobject /* this */, jlong ptr, jint maxVisits) {
+    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
+    if (!client) return env->NewStringUTF("");
+    return env->NewStringUTF(client->kataAnalyze(maxVisits).c_str());
 }
 
 } // extern "C"

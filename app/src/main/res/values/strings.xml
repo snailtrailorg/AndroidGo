@@ -90,6 +90,7 @@
     <string name="toast_saved">Saved: %1$s</string>
     <string name="toast_save_failed">Save failed: %1$s</string>
     <string name="toast_ai_error">AI error: %1$s</string>
+    <string name="engine_starting">Engine starting…</string>
     <string name="toast_ai_start_failed">AI engine start failed: %1$s</string>
     <string name="toast_ai_not_ready">AI engine not ready</string>
 

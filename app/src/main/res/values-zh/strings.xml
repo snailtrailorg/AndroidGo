@@ -90,6 +90,7 @@
     <string name="toast_saved">已保存: %1$s</string>
     <string name="toast_save_failed">保存失败: %1$s</string>
     <string name="toast_ai_error">AI错误: %1$s</string>
+    <string name="engine_starting">引擎启动中…</string>
     <string name="toast_ai_start_failed">AI引擎启动失败: %1$s</string>
     <string name="toast_ai_not_ready">AI引擎未启动</string>
 

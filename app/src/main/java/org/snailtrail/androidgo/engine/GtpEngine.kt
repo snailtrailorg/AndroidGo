@@ -153,7 +153,6 @@ class GtpEngine : Closeable {
     private external fun nativeCreate(): Long
     private external fun nativeDestroy(ptr: Long)
     private external fun nativeStart(ptr: Long, command: String): Boolean
-    private external fun nativeAttachToProcess(ptr: Long, pid: Int, stdinFd: Int, stdoutFd: Int): Boolean
     private external fun nativeStop(ptr: Long)
     private external fun nativeIsRunning(ptr: Long): Boolean
     private external fun nativeInit(ptr: Long, boardSize: Int, komi: Float): Boolean
@@ -172,4 +171,12 @@ class GtpEngine : Closeable {
     private external fun nativeInterrupt(ptr: Long)
     private external fun nativeDeadStones(ptr: Long): String
     private external fun nativeGetStones(ptr: Long, black: Boolean): String
+    private external fun nativeKataAnalyze(ptr: Long, maxVisits: Int): String
+
+    /** Run KataGo analysis and return JSON ownership data.
+     *  Only works with KataGo engine. Returns empty string if not KataGo or on error. */
+    fun kataAnalyze(maxVisits: Int = 50): String {
+        if (closed) return ""
+        return nativeKataAnalyze(nativePtr, maxVisits)
+    }
 }

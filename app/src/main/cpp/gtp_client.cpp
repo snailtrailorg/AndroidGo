@@ -1,7 +1,6 @@
 #include "gtp_client.h"
 
 #include <android/log.h>
-#include <array>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -10,8 +9,6 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <pthread.h>
-#include <sys/prctl.h>
-#include <sys/wait.h>
 #include <fcntl.h>
 
 #define GTP_LOG(...) __android_log_print(ANDROID_LOG_ERROR, "GtpClient", __VA_ARGS__)
@@ -50,118 +47,23 @@ std::vector<std::string> splitTokens(const std::string &s) {
     return result;
 }
 
-// --- Process Management ---
-
-bool GtpClient::spawnProcess(const std::string &command, int &pid, int &inFd, int &outFd) {
-    int stdinPipe[2] = {-1, -1};
-    int stdoutPipe[2] = {-1, -1};
-
-    if (pipe(stdinPipe) < 0 || pipe(stdoutPipe) < 0) {
-        if (stdinPipe[0] >= 0) { close(stdinPipe[0]); close(stdinPipe[1]); }
-        if (stdoutPipe[0] >= 0) { close(stdoutPipe[0]); close(stdoutPipe[1]); }
-        return false;
-    }
-
-    pid = fork();
-    if (pid < 0) {
-        GTP_LOG("fork() failed: %s", strerror(errno));
-        close(stdinPipe[0]); close(stdinPipe[1]);
-        close(stdoutPipe[0]); close(stdoutPipe[1]);
-        return false;
-    }
-
-    if (pid == 0) {
-        // === Child process setup before exec ===
-        // 1. New session — detach from parent's process group
-        setsid();
-
-        // 2. Redirect stdin/stdout to our pipes BEFORE closing all fds
-        dup2(stdinPipe[0], STDIN_FILENO);
-        dup2(stdoutPipe[1], STDOUT_FILENO);
-
-        // 3. Now close ALL other inherited fds
-        int maxFd = (int)sysconf(_SC_OPEN_MAX);
-        if (maxFd <= 0 || maxFd > 4096) maxFd = 1024;
-        for (int i = 3; i < maxFd; i++) close(i);
-
-        // 3. Ignore SIGPIPE — engine may crash but pipe should not kill us
-        signal(SIGPIPE, SIG_IGN);
-
-        // 4. Inform lmkd: treat this as a normal app process, not a phantom
-        int oomFd = open("/proc/self/oom_score_adj", O_WRONLY);
-        if (oomFd >= 0) { ssize_t n = write(oomFd, "0", 1); (void)n; close(oomFd); }
-
-        // 5. Android security: no new privileges after exec
-        prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
-
-        // 6. Parse command and exec
-        std::vector<std::string> args;
-        std::istringstream iss(command);
-        std::string token;
-        while (iss >> token) { args.push_back(token); }
-        std::vector<char*> argv;
-        for (auto &a : args) { argv.push_back(&a[0]); }
-        argv.push_back(nullptr);
-
-        GTP_LOG("execv(%s)", argv[0]);
-        execv(argv[0], argv.data());
-        GTP_LOG("execv failed: %s", strerror(errno));
-        _exit(127);
-    }
-
-    // Parent: keep the write end of stdin and read end of stdout
-    close(stdinPipe[0]);
-    close(stdoutPipe[1]);
-    inFd = stdinPipe[1];
-    outFd = stdoutPipe[0];
-
-    // Set stdout to non-blocking
-    int flags = fcntl(outFd, F_GETFL, 0);
-    fcntl(outFd, F_SETFL, flags | O_NONBLOCK);
-
-    return true;
-}
-
 void GtpClient::killProcess() {
-    if (m_useThread) {
-        // Signal the engine thread to exit by closing stdin.
-        // The engine's getline(cin) will see EOF and exit the GTP loop.
-        if (m_stdinFd >= 0) { close(m_stdinFd); m_stdinFd = -1; }
-        // Wait for engine thread to finish before cleanup.
-        // Search is bounded by maxVisits (100) so this is fast.
-        if (m_engineThread) {
-            pthread_join(m_engineThread, nullptr);
-            m_engineThread = 0;
-        }
-        // Safe to clean up now — thread has exited
-        if (m_stdoutFd >= 0) { close(m_stdoutFd); m_stdoutFd = -1; }
-        if (m_engineHandle) { dlclose(m_engineHandle); m_engineHandle = nullptr; }
-        m_useThread = false;
-        return;
-    }
-    if (m_pid > 0) {
-        // Send quit command first, then terminate
-        if (m_stdinFd >= 0) {
-            const char *quit = "quit\n";
-            ssize_t n = write(m_stdinFd, quit, strlen(quit));
-            (void)n;
-        }
-        // Give it a moment, then SIGTERM
-        usleep(100000);
-        kill(m_pid, SIGTERM);
-        int status;
-        waitpid(m_pid, &status, WNOHANG);
-        // Force kill after 1s
-        usleep(1000000);
-        waitpid(m_pid, &status, WNOHANG);
-        if (kill(m_pid, 0) == 0) {
-            kill(m_pid, SIGKILL);
-            waitpid(m_pid, &status, 0);
-        }
-    }
+    GTP_LOG("killProcess: closing stdin=%d stdout=%d engineHandle=%p thread=%lu",
+            m_stdinFd, m_stdoutFd, m_engineHandle, (unsigned long)m_engineThread);
+    // Signal the engine thread to exit by closing stdin.
+    // The engine's getline(cin) will see EOF and exit the GTP loop.
     if (m_stdinFd >= 0) { close(m_stdinFd); m_stdinFd = -1; }
+    // Wait for engine thread to finish before cleanup.
+    // Search is bounded by maxVisits (100) so this is fast.
+    if (m_engineThread) {
+        pthread_join(m_engineThread, nullptr);
+        m_engineThread = 0;
+        GTP_LOG("killProcess: engine thread joined");
+    }
+    // Safe to clean up now — thread has exited
     if (m_stdoutFd >= 0) { close(m_stdoutFd); m_stdoutFd = -1; }
-    m_pid = -1;
+    if (m_engineHandle) { dlclose(m_engineHandle); m_engineHandle = nullptr; }
+    GTP_LOG("killProcess: done");
 }
 
 // --- GtpClient ---
@@ -206,6 +108,7 @@ bool GtpClient::start(const std::string &command) {
     if (handle) {
         auto* gtpmain = (int(*)(int, const char**, int, int))
             dlsym(handle, "katago_gtp_main");
+        if (!gtpmain) gtpmain = (int(*)(int, const char**, int, int)) dlsym(handle, "gnugo_gtp_main");
         if (gtpmain) {
             GTP_LOG("using in-process thread mode");
             // Create pipe pair: stdin for GTP commands, stdout for responses
@@ -224,11 +127,9 @@ bool GtpClient::start(const std::string &command) {
             auto* ta = new ThreadArgs{gtpmain, argc, cargv, inPipe[0], outPipe[1]};
             pthread_create(&m_engineThread, nullptr, engineThreadFunc, ta);
 
-            m_pid = 0;  // no real PID for thread
             m_stdinFd = inPipe[1];
             m_stdoutFd = outPipe[0];
             m_engineHandle = handle;
-            m_useThread = true;
             m_running = true;
 
             // Set non-blocking
@@ -260,69 +161,10 @@ bool GtpClient::start(const std::string &command) {
         dlclose(handle);
     }
 
-    // Fallback: fork+exec for engines without katago_gtp_main (GNU Go)
-    if (!spawnProcess(command, m_pid, m_stdinFd, m_stdoutFd)) {
-        if (callbacks.onError)
-            callbacks.onError("Failed to start engine process: " + std::string(strerror(errno)));
-        return false;
-    }
-    m_running = true;
-
-    // Flush engine banner from stdout before GTP handshake.
-    // Some engines (KataGo) print startup info to stdout, which breaks
-    // GTP parsing (banner lines don't start with '=' or '?').
-    usleep(200000);  // 200ms for engine to print its banner
-    char discardBuf[4096];
-    ssize_t flushed;
-    while ((flushed = read(m_stdoutFd, discardBuf, sizeof(discardBuf))) > 0) {
-        // Keep draining until pipe is empty
-    }
-
-    // GTP handshake: ask for engine name
-    if (!sendCommand("name")) return false;
-    std::string nameResp;
-    if (!readResponse(nameResp)) return false;
-    m_engineName = nameResp;
-
-    // Ask for engine version
-    if (!sendCommand("version")) return false;
-    std::string verResp;
-    if (!readResponse(verResp)) return false;
-    m_engineVersion = verResp;
-
-    GTP_LOG("engine started: %s v%s", m_engineName.c_str(), m_engineVersion.c_str());
-    return true;
-}
-
-bool GtpClient::attachToProcess(int pid, int stdinFd, int stdoutFd) {
-    if (m_running) stop();
-    m_pid = pid;
-    m_stdinFd = stdinFd;
-    m_stdoutFd = stdoutFd;
-
-    // Set stdout to non-blocking
-    int flags = fcntl(m_stdoutFd, F_GETFL, 0);
-    fcntl(m_stdoutFd, F_SETFL, flags | O_NONBLOCK);
-    m_running = true;
-
-    // Flush engine banner before GTP handshake
-    usleep(200000);
-    char discardBuf[4096];
-    ssize_t flushed;
-    while ((flushed = read(m_stdoutFd, discardBuf, sizeof(discardBuf))) > 0) {}
-
-    // GTP handshake
-    if (!sendCommand("name")) return false;
-    std::string nameResp;
-    if (!readResponse(nameResp)) return false;
-    m_engineName = nameResp;
-
-    if (!sendCommand("version")) return false;
-    std::string verResp;
-    if (!readResponse(verResp)) return false;
-    m_engineVersion = verResp;
-
-    return true;
+    GTP_LOG("no suitable GTP entry point found in %s", args[0].c_str());
+    if (callbacks.onError)
+        callbacks.onError("Failed to start engine: no GTP entry point found");
+    return false;
 }
 
 void GtpClient::stop() {
@@ -342,10 +184,7 @@ void GtpClient::interrupt() {
 }
 
 bool GtpClient::isRunning() const {
-    if (!m_running) return false;
-    if (m_useThread) return true;  // thread is alive while m_running
-    if (m_pid > 0 && kill(m_pid, 0) != 0) return false;
-    return true;
+    return m_running;
 }
 
 // --- GTP Low-level ---
@@ -358,6 +197,7 @@ bool GtpClient::sendCommand(const std::string &cmd) {
 
     std::string line = cmd + "\n";
     ssize_t written = write(m_stdinFd, line.c_str(), line.size());
+    GTP_LOG("send: %s", cmd.c_str());
     return written == (ssize_t)line.size();
 }
 
@@ -383,6 +223,19 @@ std::string GtpClient::readLine() {
 bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
     if (callbacks.onWaiting) callbacks.onWaiting(true);
 
+    // Buffer for chunked reads (avoids slow char-by-char non-blocking reads)
+    char buf[4096];
+    int bufPos = 0;
+    int bufLen = 0;
+    auto nextChar = [&]() -> int {
+        if (bufPos >= bufLen) {
+            bufPos = 0;
+            bufLen = (int)read(m_stdoutFd, buf, sizeof(buf));
+            if (bufLen <= 0) return bufLen;  // error or EAGAIN
+        }
+        return (unsigned char)buf[bufPos++];
+    };
+
     std::string accum;
     int consecutiveNewlines = 0;
     bool gotFirstChar = false;
@@ -390,14 +243,18 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
     int interruptStrikes = 0;
 
     while (true) {
-        char c;
-        ssize_t n = read(m_stdoutFd, &c, 1);
+        int ch = nextChar();
 
-        if (n <= 0) {
+        if (ch < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (nonBlocking) break;
-                // Safety net: if engine didn't respond to interrupt after ~1s
-                if (m_interrupted && ++interruptStrikes > 200) {
+                if (++interruptStrikes > 12000) {
+                    GTP_LOG("readResponse timeout after 60s");
+                    out = "";
+                    if (callbacks.onWaiting) callbacks.onWaiting(false);
+                    return false;
+                }
+                if (m_interrupted && interruptStrikes > 200) {
                     if (callbacks.onWaiting) callbacks.onWaiting(false);
                     m_interrupted = false;
                     out = "";
@@ -406,7 +263,6 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
                 usleep(5000);
                 continue;
             }
-            // Process error
             if (callbacks.onError) {
                 std::string errMsg;
                 if (errno != 0) errMsg = "Engine read error: " + std::string(strerror(errno));
@@ -417,6 +273,7 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
             return false;
         }
 
+        char c = (char)ch;
         accum += c;
 
         if (!gotFirstChar) {
@@ -426,7 +283,6 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
 
         if (c == '\n') {
             consecutiveNewlines++;
-            // GTP response ends with \n\n (blank line)
             if (consecutiveNewlines >= 2) break;
         } else if (c != '\r') {
             consecutiveNewlines = 0;
@@ -628,6 +484,7 @@ bool GtpClient::generateMove(bool black, bool undoable) {
     if (!sendCommand(cmd)) return false;
     std::string response;
     if (!readResponse(response)) return false;
+    GTP_LOG("genmove %s: %s", black ? "black" : "white", response.c_str());
 
     // Parse the engine's move response
     Move move;
@@ -762,6 +619,16 @@ std::vector<Stone> GtpClient::deadStones() {
         if (s.isValid()) result.push_back(s);
     }
     return result;
+}
+
+std::string GtpClient::kataAnalyze(int maxVisits) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "kata-raw-nn all");
+    if (!sendCommand(buf)) return "";
+    std::string resp;
+    if (!readResponse(resp)) return "";
+    GTP_LOG("kata-raw-nn response: %zu bytes", resp.size());
+    return resp;
 }
 
 std::vector<Stone> GtpClient::bestMoves(bool black) {
