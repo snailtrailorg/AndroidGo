@@ -212,18 +212,39 @@ fun ReviewScreen(
     onBack: () -> Unit,
     onLoad: () -> Unit
 ) {
-    val game = remember { GoGame(boardSize).also { it.setKomi(komi) } }
+    val game = remember {
+        val g = GoGame(boardSize)
+        g.setKomi(komi)
+        if (handicap > 0) g.setHandicap(handicap)
+        g
+    }
     var displayIndex by remember { mutableIntStateOf(currentIndex) }
+    var trackedIndex by remember { mutableIntStateOf(0) }
 
+    // Delta replay — only advance/retreat the difference, not replay from 0
     val boardState = remember(game, displayIndex) {
-        game.reset(boardSize)
-        game.setKomi(komi)
-        if (handicap > 0) game.setHandicap(handicap)
-        for (i in 0 until displayIndex.coerceAtMost(moves.size)) {
-            val (row, col) = moves[i]
-            if (row < 0) game.pass()
-            else if (!game.placeStone(row, col)) break
+        if (displayIndex > trackedIndex) {
+            // Advance: play new moves
+            for (i in trackedIndex until displayIndex.coerceAtMost(moves.size)) {
+                val (row, col) = moves[i]
+                if (row < 0) game.pass()
+                else if (!game.placeStone(row, col)) break
+            }
+        } else if (displayIndex < trackedIndex) {
+            // Retreat: undo to target
+            while (game.state.value.moveHistory.size > displayIndex) {
+                game.undo()
+            }
+            // Re-sync in case undo missed anything
+            if (game.state.value.moveHistory.size < displayIndex) {
+                for (i in game.state.value.moveHistory.size until displayIndex.coerceAtMost(moves.size)) {
+                    val (row, col) = moves[i]
+                    if (row < 0) game.pass()
+                    else if (!game.placeStone(row, col)) break
+                }
+            }
         }
+        trackedIndex = displayIndex
         game.state.value
     }
 
