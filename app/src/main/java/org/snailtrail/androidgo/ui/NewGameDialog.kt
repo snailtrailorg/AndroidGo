@@ -273,8 +273,8 @@ private fun GroupBox(title: String, content: @Composable () -> Unit) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 6.dp)
             )
