@@ -11,3 +11,4 @@
 /app/.cxx/
 *.jks
 *.keystore
+app/debug.keystore
