@@ -12,9 +12,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 enum class EngineType(val binaryName: String, val cliArgs: String) {
-    GnuGo("libgnugo_engine.so", "--mode gtp --level %LEVEL%"),
-    KataGoGPU("libkatago_engine.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%"),
-    KataGoCPU("libkatago_engine_cpu.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%")
+    GnuGo("libgnugo.so", "--mode gtp --level %LEVEL%"),
+    KataGoGPU("libkatago_gpu.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%"),
+    KataGoCPU("libkatago_cpu.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%")
 }
 
 class EngineManager(private val context: Context) {

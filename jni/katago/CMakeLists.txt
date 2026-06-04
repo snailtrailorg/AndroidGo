@@ -5,9 +5,9 @@ set(KATAGO_BACKEND "OPENCL" CACHE STRING "Neural net backend (OPENCL or EIGEN)")
 
 # Derive output filename from backend
 if(KATAGO_BACKEND STREQUAL "EIGEN")
-  set(KATAGO_OUTPUT_NAME katago_engine_cpu)
+  set(KATAGO_OUTPUT_NAME katago_cpu)
 else()
-  set(KATAGO_OUTPUT_NAME katago_engine)
+  set(KATAGO_OUTPUT_NAME katago_gpu)
 endif()
 
 # Strip -Wl,--no-undefined (but NOT --no-undefined-version) added by NDK toolchain
