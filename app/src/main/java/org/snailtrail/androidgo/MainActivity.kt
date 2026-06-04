@@ -508,7 +508,11 @@ class MainActivity : ComponentActivity() {
             if (aiEngineInitializing.get()) throw IllegalStateException(getString(R.string.error_init_timeout))
         }
         try {
-            val engineType = if (aiPlayer.engine == AiEngine.KataGo) EngineType.KataGo else EngineType.GnuGo
+            val engineType = when {
+                aiPlayer.engine == AiEngine.KataGo && aiPlayer.backend == ComputeBackend.GPU -> EngineType.KataGoGPU
+                aiPlayer.engine == AiEngine.KataGo -> EngineType.KataGoCPU
+                else -> EngineType.GnuGo
+            }
             val engine = engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend)
             engine.init(boardSize, komi)
 
@@ -659,7 +663,7 @@ class MainActivity : ComponentActivity() {
         // This handles Human vs Human games or when the current engine fails.
         val tempMgr = EngineManager(applicationContext)
         return try {
-            tempMgr.ensureEngine(EngineType.KataGo, 5, ComputeBackend.CPU)
+            tempMgr.ensureEngine(EngineType.KataGoCPU, 5, ComputeBackend.CPU)
             val e = tempMgr.getEngine()!!
             e.init(state.size, state.komi)
             for ((pos, color) in state.stones) {

@@ -1,7 +1,9 @@
 #ifndef NEURALNET_OPENCLINCLUDES_H
 #define NEURALNET_OPENCLINCLUDES_H
 
-//Ensures a consistent opencl version everywhere we include opencl
+#ifdef USE_OPENCL_BACKEND
+
+// Ensures a consistent opencl version everywhere we include opencl
 #define CL_TARGET_OPENCL_VERSION 120
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 
@@ -17,4 +19,6 @@
 #include "opencl_dispatch.h"
 #endif
 
-#endif //NEURALNET_OPENCLINCLUDES_H
+#endif // USE_OPENCL_BACKEND
+
+#endif // NEURALNET_OPENCLINCLUDES_H

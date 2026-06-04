@@ -13,7 +13,8 @@ import kotlinx.coroutines.withContext
 
 enum class EngineType(val binaryName: String, val cliArgs: String) {
     GnuGo("libgnugo_engine.so", "--mode gtp --level %LEVEL%"),
-    KataGo("libkatago_engine.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%")
+    KataGoGPU("libkatago_engine.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%"),
+    KataGoCPU("libkatago_engine_cpu.so", "gtp -config %CONFIG% -model %MODEL% -override-config %OVERRIDE%")
 }
 
 class EngineManager(private val context: Context) {
@@ -60,7 +61,7 @@ class EngineManager(private val context: Context) {
         }
 
         val args = when (type) {
-            EngineType.KataGo -> {
+            EngineType.KataGoGPU, EngineType.KataGoCPU -> {
                 val modelPath = withContext(Dispatchers.IO) { extractModel() }
                 val configPath = withContext(Dispatchers.IO) { extractConfig() }
                 val visits = maxVisitsForDifficulty(difficulty)
