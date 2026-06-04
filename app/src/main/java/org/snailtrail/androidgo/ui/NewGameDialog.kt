@@ -392,7 +392,7 @@ private fun PlayerBlock(
             }
 
             SettingRow(stringResource(R.string.difficulty_label)) {
-                Text(difficultyLabel(engine, difficulty), fontSize = 13.sp, modifier = Modifier.width(68.dp))
+                Text(difficultyLabel(difficulty), fontSize = 13.sp, modifier = Modifier.width(68.dp))
                 Slider(
                     value = difficulty.toFloat(),
                     onValueChange = { onDifficultyChange(it.roundToInt()) },
@@ -451,10 +451,7 @@ private fun SettingRow(label: String, content: @Composable RowScope.() -> Unit) 
 }
 
 @Composable
-private fun difficultyLabel(engine: AiEngine, level: Int): String = when (engine) {
-    AiEngine.GnuGo -> stringResource(R.string.difficulty_gnugo, level)
-    AiEngine.KataGo -> stringResource(R.string.difficulty_katago, level)
-}
+private fun difficultyLabel(level: Int): String = stringResource(R.string.difficulty_value, level)
 
 // ── Preferences ──
 

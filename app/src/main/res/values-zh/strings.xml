@@ -67,8 +67,7 @@
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
     <string name="difficulty_label">难度</string>
-    <string name="difficulty_gnugo">级别 %1$d</string>
-    <string name="difficulty_katago">%1$d档</string>
+    <string name="difficulty_value">%1$d级</string>
     <string name="btn_cancel">取消</string>
     <string name="btn_start">开始</string>
     <string name="default_black_name">黑方</string>
@@ -108,6 +107,6 @@
     <string name="end_game_cancel">取消</string>
 
     <!-- Error Messages -->
-    <string name="error_engine_closed">Engine is closed</string>
+    <string name="error_engine_closed">引擎已关闭</string>
     <string name="error_init_timeout">AI引擎初始化超时</string>
 </resources>

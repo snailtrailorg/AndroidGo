@@ -67,8 +67,7 @@
     <string name="backend_cpu">CPU</string>
     <string name="backend_gpu">GPU</string>
     <string name="difficulty_label">Level</string>
-    <string name="difficulty_gnugo">%1$d</string>
-    <string name="difficulty_katago">Lv %1$d</string>
+    <string name="difficulty_value">Lv %1$d</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_start">Start</string>
     <string name="default_black_name">Black</string>
