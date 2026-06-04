@@ -481,5 +481,7 @@ private fun savePrefs(
         .putString(PrefKeys.WHITE_NAME, whiteName)
         .putString(PrefKeys.WHITE_ENGINE, whiteEngine.name)
         .putInt(PrefKeys.WHITE_DIFFICULTY, whiteDifficulty)
+        .putString(PrefKeys.BLACK_BACKEND, blackBackend.name)
+        .putString(PrefKeys.WHITE_BACKEND, whiteBackend.name)
         .apply()
 }
