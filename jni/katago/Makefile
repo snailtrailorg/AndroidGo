@@ -10,9 +10,14 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--export-dynamic -Wl,--allow-shlib-undefined -Wl,--unresolved-symbols=ignore-in-shared-libs"
 
-.PHONY: all katago-cpu katago-gpu clean verify
+.PHONY: all katago-cpu katago-gpu gnugo clean verify
 
 all: katago-cpu katago-gpu
+
+gnugo:
+	@echo "=== GNU Go ==="
+	@cd $(CURDIR)/../gnugo && bash build_gnugo.sh 2>&1 | tail -3
+	@ls -lh $(OUTDIR)/libgnugo.so
 
 katago-cpu: $(OUTDIR)/libkatago_cpu.so
 katago-gpu: $(OUTDIR)/libkatago_gpu.so
