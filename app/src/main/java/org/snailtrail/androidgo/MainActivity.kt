@@ -599,8 +599,7 @@ class MainActivity : ComponentActivity() {
                     // one frame, sometimes skipping the board redraw.
                     kotlinx.coroutines.delay(50)
                 } else {
-                    withContext(Dispatchers.Main) { goGame.pass() }
-                    // Engine pipe is dirty after interrupted genmove — restart fresh next turn
+                    // Engine pipe broken (e.g. killed by new game) — don't touch board
                     withContext(Dispatchers.IO) { engineManager.close() }
                     aiEngineReady.set(false)
                 }
@@ -608,7 +607,6 @@ class MainActivity : ComponentActivity() {
                 Log.e(TAG, "triggerAiMove gen=$gen exception: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity, getString(R.string.toast_ai_error, e.message ?: ""), Toast.LENGTH_SHORT).show()
-                    goGame.pass()
                 }
                 withContext(Dispatchers.IO) { engineManager.close() }
                 aiEngineReady.set(false)

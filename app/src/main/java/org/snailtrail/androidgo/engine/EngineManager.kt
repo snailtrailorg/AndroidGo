@@ -7,6 +7,8 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 enum class EngineType(val binaryName: String, val cliArgs: String) {
@@ -16,6 +18,7 @@ enum class EngineType(val binaryName: String, val cliArgs: String) {
 
 class EngineManager(private val context: Context) {
 
+    private val mutex = Mutex()
     private var engine: GtpEngine? = null
     private var enginePath: String? = null
     private var currentType: EngineType? = null
@@ -41,9 +44,9 @@ class EngineManager(private val context: Context) {
         else -> 500
     }
 
-    suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5, backend: ComputeBackend = ComputeBackend.CPU): GtpEngine {
+    suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5, backend: ComputeBackend = ComputeBackend.CPU): GtpEngine = mutex.withLock {
         if (type == currentType && engine?.isRunning() == true) {
-            return engine!!
+            return@withLock engine!!
         }
         close()
 
