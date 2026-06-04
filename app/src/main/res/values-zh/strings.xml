@@ -59,6 +59,11 @@
     <string name="role_ai">AI</string>
     <string name="name_label">名称</string>
     <string name="engine_label">引擎</string>
+    <string name="engine_gnugo">GNU Go</string>
+    <string name="engine_katago">KataGo</string>
+    <string name="backend_label">算力</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
     <string name="difficulty_label">难度</string>
     <string name="difficulty_gnugo">级别 %1$d</string>
     <string name="difficulty_katago">%1$d档</string>

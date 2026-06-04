@@ -72,6 +72,7 @@ import org.snailtrail.androidgo.ui.TitleBar
 import org.snailtrail.androidgo.ui.PlayerConfig
 import org.snailtrail.androidgo.ui.PlayerRole
 import org.snailtrail.androidgo.ui.AiEngine
+import org.snailtrail.androidgo.ui.ComputeBackend
 import org.snailtrail.androidgo.ui.board.GoBoardScreen
 import org.snailtrail.androidgo.ui.theme.AndroidGoTheme
 import java.io.File
@@ -508,7 +509,7 @@ class MainActivity : ComponentActivity() {
         }
         try {
             val engineType = if (aiPlayer.engine == AiEngine.KataGo) EngineType.KataGo else EngineType.GnuGo
-            Log.d(TAG, "initAiEngine: type=$engineType ready=${aiEngineReady.get()} init=${aiEngineInitializing.get()}") ;val engine = engineManager.ensureEngine(engineType, aiPlayer.difficulty)
+            val engine = engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend)
             engine.init(boardSize, komi)
 
             val stones = goGame.state.value.stones
@@ -660,7 +661,7 @@ class MainActivity : ComponentActivity() {
         // This handles Human vs Human games or when the current engine fails.
         val tempMgr = EngineManager(applicationContext)
         return try {
-            tempMgr.ensureEngine(EngineType.KataGo, 5)
+            tempMgr.ensureEngine(EngineType.KataGo, 5, ComputeBackend.CPU)
             val e = tempMgr.getEngine()!!
             e.init(state.size, state.komi)
             for ((pos, color) in state.stones) {

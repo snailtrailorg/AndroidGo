@@ -59,6 +59,11 @@
     <string name="role_ai">AI</string>
     <string name="name_label">Name</string>
     <string name="engine_label">Engine</string>
+    <string name="engine_gnugo">GNU Go</string>
+    <string name="engine_katago">KataGo</string>
+    <string name="backend_label">Compute</string>
+    <string name="backend_cpu">CPU</string>
+    <string name="backend_gpu">GPU</string>
     <string name="difficulty_label">Level</string>
     <string name="difficulty_gnugo">%1$d</string>
     <string name="difficulty_katago">Lv %1$d</string>

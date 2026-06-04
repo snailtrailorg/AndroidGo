@@ -60,12 +60,14 @@ import org.snailtrail.androidgo.game.PrefKeys
 import kotlin.math.roundToInt
 
 enum class PlayerRole { Human, AI }
+enum class ComputeBackend { CPU, GPU }
 
 data class PlayerConfig(
     val role: PlayerRole = PlayerRole.Human,
     val name: String = "黑方",
     val engine: AiEngine = AiEngine.GnuGo,
-    val difficulty: Int = 5
+    val difficulty: Int = 5,
+    val backend: ComputeBackend = ComputeBackend.CPU
 )
 
 enum class AiEngine(val label: String) {
@@ -103,7 +105,9 @@ fun NewGameDialog(
     var whiteName by remember { mutableStateOf(prefs.getString(PrefKeys.WHITE_NAME, "GNU Go") ?: "GNU Go") }
     var whiteNameEdited by remember { mutableStateOf(false) }
     var whiteEngine by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_ENGINE, AiEngine.GnuGo)) }
+    var blackBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_BACKEND, ComputeBackend.CPU)) }
     var whiteDifficulty by remember { mutableIntStateOf(prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5)) }
+    var whiteBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_BACKEND, ComputeBackend.CPU)) }
 
     val aiVsAi = blackRole == PlayerRole.AI && whiteRole == PlayerRole.AI
 
@@ -186,7 +190,9 @@ fun NewGameDialog(
                                 blackEngine = e
                                 if (!blackNameEdited) blackName = defaultName(blackRole, e, true)
                             },
-                            onDifficultyChange = { blackDifficulty = it }
+                            onDifficultyChange = { blackDifficulty = it },
+                            backend = blackBackend,
+                            onBackendChange = { blackBackend = it }
                         )
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
@@ -207,7 +213,9 @@ fun NewGameDialog(
                                 whiteEngine = e
                                 if (!whiteNameEdited) whiteName = defaultName(whiteRole, e, false)
                             },
-                            onDifficultyChange = { whiteDifficulty = it }
+                            onDifficultyChange = { whiteDifficulty = it },
+                            backend = whiteBackend,
+                            onBackendChange = { whiteBackend = it }
                         )
                     }
                 } // end scrollable
@@ -232,13 +240,14 @@ fun NewGameDialog(
                         Button(onClick = {
                             savePrefs(prefs, boardSize, handicap,
                                 blackRole, blackName, blackEngine, blackDifficulty,
-                                whiteRole, whiteName, whiteEngine, whiteDifficulty)
+                                whiteRole, whiteName, whiteEngine, whiteDifficulty,
+                                blackBackend, whiteBackend)
                             onConfirm(
                                 NewGameConfig(
                                     boardSize = boardSize,
                                     handicap = handicap,
-                                    blackPlayer = PlayerConfig(blackRole, blackName, blackEngine, blackDifficulty),
-                                    whitePlayer = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDifficulty)
+                                    blackPlayer = PlayerConfig(blackRole, blackName, blackEngine, blackDifficulty, blackBackend),
+                                    whitePlayer = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDifficulty, whiteBackend)
                                 )
                             )
                         },
@@ -306,10 +315,12 @@ private fun PlayerBlock(
     name: String,
     engine: AiEngine,
     difficulty: Int,
+    backend: ComputeBackend,
     onRoleChange: (PlayerRole) -> Unit,
     onNameChange: (String) -> Unit,
     onEngineChange: (AiEngine) -> Unit,
-    onDifficultyChange: (Int) -> Unit
+    onDifficultyChange: (Int) -> Unit,
+    onBackendChange: (ComputeBackend) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         // Row 1: stone + label + role
@@ -353,25 +364,30 @@ private fun PlayerBlock(
 
         // Engine + difficulty (AI only)
         if (role == PlayerRole.AI) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.engine_label), fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(40.dp))
+            SettingRow(stringResource(R.string.engine_label)) {
                 AiEngine.entries.forEach { eng ->
-                    val sel = engine == eng
-                    Text(
-                        eng.label, fontSize = 13.sp,
-                        fontWeight = if (sel) FontWeight.Medium else FontWeight.Normal,
-                        color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                else Color.Transparent
-                            )
-                            .clickable { onEngineChange(eng) }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
+                    RoleChip(
+                        when (eng) {
+                            AiEngine.GnuGo -> stringResource(R.string.engine_gnugo)
+                            AiEngine.KataGo -> stringResource(R.string.engine_katago)
+                        },
+                        selected = engine == eng
+                    ) { onEngineChange(eng) }
+                }
+            }
+
+            // Compute backend — only for KataGo, same chip style as Human/AI
+            if (engine == AiEngine.KataGo) {
+                SettingRow(stringResource(R.string.backend_label)) {
+                    ComputeBackend.entries.forEach { bk ->
+                        RoleChip(
+                            when (bk) {
+                                ComputeBackend.CPU -> stringResource(R.string.backend_cpu)
+                                ComputeBackend.GPU -> stringResource(R.string.backend_gpu)
+                            },
+                            selected = backend == bk
+                        ) { onBackendChange(bk) }
+                    }
                 }
             }
 
@@ -455,7 +471,8 @@ private fun savePrefs(
     prefs: android.content.SharedPreferences,
     boardSize: Int, handicap: Int,
     blackRole: PlayerRole, blackName: String, blackEngine: AiEngine, blackDifficulty: Int,
-    whiteRole: PlayerRole, whiteName: String, whiteEngine: AiEngine, whiteDifficulty: Int
+    whiteRole: PlayerRole, whiteName: String, whiteEngine: AiEngine, whiteDifficulty: Int,
+    blackBackend: ComputeBackend, whiteBackend: ComputeBackend
 ) {
     prefs.edit()
         .putInt(PrefKeys.BOARD_SIZE, boardSize)

@@ -13,6 +13,8 @@ object PrefKeys {
     const val WHITE_NAME = "whiteName"
     const val WHITE_ENGINE = "whiteEngine"
     const val WHITE_DIFFICULTY = "whiteDifficulty"
+    const val BLACK_BACKEND = "blackBackend"
+    const val WHITE_BACKEND = "whiteBackend"
 }
 
 object SgfConstants {

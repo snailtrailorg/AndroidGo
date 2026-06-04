@@ -2,6 +2,7 @@ package org.snailtrail.androidgo.engine
 
 import android.content.Context
 import android.util.Log
+import org.snailtrail.androidgo.ui.ComputeBackend
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -40,7 +41,7 @@ class EngineManager(private val context: Context) {
         else -> 500
     }
 
-    suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5): GtpEngine {
+    suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5, backend: ComputeBackend = ComputeBackend.CPU): GtpEngine {
         if (type == currentType && engine?.isRunning() == true) {
             return engine!!
         }
