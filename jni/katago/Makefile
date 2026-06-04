@@ -24,16 +24,16 @@ katago-gpu: $(OUTDIR)/libkatago_gpu.so
 
 $(OUTDIR)/libkatago_cpu.so:
 	@echo "=== KataGo CPU (Eigen) ==="
-	@rm -rf $(BUILD_BASE)-cpu && mkdir -p $(BUILD_BASE)-cpu
-	@$(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-cpu $(CMAKE_FLAGS) -DKATAGO_BACKEND=EIGEN 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
+	@mkdir -p $(BUILD_BASE)-cpu
+	@test -f $(BUILD_BASE)-cpu/CMakeCache.txt || $(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-cpu $(CMAKE_FLAGS) -DKATAGO_BACKEND=EIGEN 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
 	@$(CMAKE) --build $(BUILD_BASE)-cpu -j$$(nproc) 2>&1 | tail -2
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@
 
 $(OUTDIR)/libkatago_gpu.so:
 	@echo "=== KataGo GPU (OpenCL) ==="
-	@rm -rf $(BUILD_BASE)-gpu && mkdir -p $(BUILD_BASE)-gpu
-	@$(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-gpu $(CMAKE_FLAGS) -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
+	@mkdir -p $(BUILD_BASE)-gpu
+	@test -f $(BUILD_BASE)-gpu/CMakeCache.txt || $(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-gpu $(CMAKE_FLAGS) -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
 	@$(CMAKE) --build $(BUILD_BASE)-gpu -j$$(nproc) 2>&1 | tail -2
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@

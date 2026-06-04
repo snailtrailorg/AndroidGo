@@ -458,7 +458,6 @@ class MainActivity : ComponentActivity() {
         whiteConfig = config.whitePlayer
         aiEngineReady.set(false)
         aiEngineInitializing.set(false)
-        engineManager.close()
 
         goGame.reset(config.boardSize)
 
@@ -471,6 +470,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                engineManager.close()  // blocking pthread_join, must stay off main thread
                 val aiPlayer = if (blackConfig.role == PlayerRole.AI) blackConfig else whiteConfig
                 val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
                 initAiEngine(aiPlayer, config.boardSize, engKomi)

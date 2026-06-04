@@ -95,10 +95,14 @@ target_link_libraries(katago_engine PRIVATE dl log z m)
 # ── Export ──
 target_link_options(katago_engine PRIVATE
     -Wl,--export-dynamic
-    -Wl,--allow-shlib-undefined
-    -Wl,--unresolved-symbols=ignore-in-shared-libs
     -Wl,-soname,lib${KATAGO_OUTPUT_NAME}.so
 )
+# OpenCL symbols are resolved at runtime via dispatch → need relaxed linking
+if(KATAGO_BACKEND STREQUAL "OPENCL")
+  target_link_options(katago_engine PRIVATE
+    -Wl,--allow-shlib-undefined
+    -Wl,--unresolved-symbols=ignore-in-shared-libs)
+endif()
 
 # ── Output to jniLibs ──
 set_target_properties(katago_engine PROPERTIES
