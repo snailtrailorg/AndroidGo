@@ -456,10 +456,6 @@ private fun difficultyLabel(engine: AiEngine, level: Int): String = when (engine
     AiEngine.KataGo -> stringResource(R.string.difficulty_katago, level)
 }
 
-@Composable
-private fun formatKomi(k: Float): String =
-    if (k == k.toLong().toFloat()) "${k.toInt()}" else "$k"
-
 // ── Preferences ──
 
 private inline fun <reified T : Enum<T>> enumPref(prefs: android.content.SharedPreferences, key: String, default: T): T {

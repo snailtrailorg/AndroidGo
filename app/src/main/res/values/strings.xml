@@ -12,6 +12,8 @@
     <!-- Game Info Bar -->
     <string name="game_over">Game Over</string>
     <string name="ai_thinking">Thinking…</string>
+    <string name="info_player">%1$s</string>
+    <string name="info_player_ai">%1$s (AI)</string>
     <string name="move_count">Move %1$d</string>
 
     <!-- Bottom Bar -->

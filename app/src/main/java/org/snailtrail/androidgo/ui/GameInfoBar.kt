@@ -43,17 +43,31 @@ fun GameInfoBar(
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Black stone indicator
         Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFF1A1A1A)))
+
+        // Black name + AI label
         Text(
-            " $blackName${if (blackIsAI) " (AI)" else ""}",
+            stringResource(if (blackIsAI) R.string.info_player_ai else R.string.info_player, blackName),
             fontSize = 13.sp,
-            fontWeight = if (isBlackTurn) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (isBlackTurn) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(start = 4.dp)
         )
-        Text(
-            if (isBlackTurn) " ⌛" else "  ",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
+
+        // Turn indicator — small dot next to current player
+        if (isBlackTurn) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        } else {
+            Box(modifier = Modifier.padding(horizontal = 4.dp).size(8.dp))
+        }
+
+        // Center: move count / game status
         Text(
             text = when {
                 gameOver -> stringResource(R.string.game_over)
@@ -65,16 +79,29 @@ fun GameInfoBar(
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
+
+        // Turn indicator — small dot next to current player
+        if (!isBlackTurn && !gameOver) {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        } else {
+            Box(modifier = Modifier.padding(horizontal = 4.dp).size(8.dp))
+        }
+
+        // White name + AI label
         Text(
-            if (!isBlackTurn) "⌛ " else "  ",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            "${if (whiteIsAI) "(AI) " else ""}$whiteName ",
+            stringResource(if (whiteIsAI) R.string.info_player_ai else R.string.info_player, whiteName),
             fontSize = 13.sp,
-            fontWeight = if (!isBlackTurn && !gameOver) FontWeight.Bold else FontWeight.Normal
+            fontWeight = if (!isBlackTurn && !gameOver) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(end = 4.dp)
         )
+
+        // White stone indicator
         Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFFF0F0F0)))
     }
 }

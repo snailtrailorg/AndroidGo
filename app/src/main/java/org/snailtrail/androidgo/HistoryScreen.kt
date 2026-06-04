@@ -185,7 +185,7 @@ fun HistoryScreen(
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                         modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
                                         Text(stringResource(R.string.history_delete), fontSize = 12.sp,
-                                            color = Color(0xFFC62828))
+                                            color = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             }
@@ -341,7 +341,7 @@ fun ReviewScreen(
                 colors = navButtonColors
             ) { Text("◀", fontSize = 16.sp) }
             Text(
-                "$displayIndex / ${moves.size}",
+                stringResource(R.string.review_move, displayIndex, moves.size),
                 fontSize = 15.sp,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
