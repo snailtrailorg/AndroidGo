@@ -10,13 +10,12 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--export-dynamic -Wl,--allow-shlib-undefined -Wl,--unresolved-symbols=ignore-in-shared-libs"
 
-.PHONY: all cpu opencl clean verify
+.PHONY: all katago-cpu katago-gpu clean verify
 
-all: cpu opencl
+all: katago-cpu katago-gpu
 
-cpu: $(OUTDIR)/libkatago_cpu.so
-
-opencl: $(OUTDIR)/libkatago_gpu.so
+katago-cpu: $(OUTDIR)/libkatago_cpu.so
+katago-gpu: $(OUTDIR)/libkatago_gpu.so
 
 $(OUTDIR)/libkatago_cpu.so:
 	@echo "=== KataGo CPU (Eigen) ==="
@@ -28,22 +27,25 @@ $(OUTDIR)/libkatago_cpu.so:
 
 $(OUTDIR)/libkatago_gpu.so:
 	@echo "=== KataGo GPU (OpenCL) ==="
-	@rm -rf $(BUILD_BASE)-opencl && mkdir -p $(BUILD_BASE)-opencl
-	@$(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-opencl $(CMAKE_FLAGS) -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
-	@$(CMAKE) --build $(BUILD_BASE)-opencl -j$$(nproc) 2>&1 | tail -2
+	@rm -rf $(BUILD_BASE)-gpu && mkdir -p $(BUILD_BASE)-gpu
+	@$(CMAKE) -S $(CURDIR) -B $(BUILD_BASE)-gpu $(CMAKE_FLAGS) -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
+	@$(CMAKE) --build $(BUILD_BASE)-gpu -j$$(nproc) 2>&1 | tail -2
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@
 
 verify:
-	@for f in libkatago_gpu.so libkatago_cpu.so; do \
+	@printf "%-25s %-10s %s\n" "ENGINE" "SIZE" "EXPORT"
+	@printf "%-25s %-10s %s\n" "------" "----" "------"
+	@for f in libgnugo.so libkatago_cpu.so libkatago_gpu.so; do \
 		if [ -f $(OUTDIR)/$$f ]; then \
-			ok=$$(nm -D $(OUTDIR)/$$f 2>/dev/null | grep -c katago_gtp_main || true); \
-			printf "%-35s %s\n" "$$f" "$$([ $$ok -gt 0 ] && echo OK || echo MISSING)"; \
+			sz=$$(ls -lh $(OUTDIR)/$$f | awk '{print $$5}'); \
+			ok=$$(nm -D $(OUTDIR)/$$f 2>/dev/null | grep -c gtp_main || true); \
+			printf "%-25s %-10s %s\n" "$$f" "$$sz" "$$([ $$ok -gt 0 ] && echo OK || echo MISSING)"; \
 		else \
-			printf "%-35s %s\n" "$$f" "NOT BUILT"; \
+			printf "%-25s %-10s %s\n" "$$f" "-" "NOT BUILT"; \
 		fi; \
 	done
 
 clean:
-	rm -rf $(BUILD_BASE)-opencl $(BUILD_BASE)-cpu
-	rm -f $(OUTDIR)/libkatago_gpu.so $(OUTDIR)/libkatago_cpu.so
+	rm -rf $(BUILD_BASE)-cpu $(BUILD_BASE)-gpu
+	rm -f $(OUTDIR)/libkatago_cpu.so $(OUTDIR)/libkatago_gpu.so
