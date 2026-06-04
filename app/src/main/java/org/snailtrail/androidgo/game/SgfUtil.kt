@@ -43,7 +43,10 @@ object SgfUtil {
         }
 
         sb.append(")\n")
-        file.writeText(sb.toString())
+        // Atomic write: temp file → rename avoids corrupt file on crash
+        val tmp = java.io.File(file.parent, "${file.name}.tmp")
+        tmp.writeText(sb.toString())
+        tmp.renameTo(file)
     }
 
     fun parseFromFile(file: File): ParsedSgf? {

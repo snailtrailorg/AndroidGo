@@ -47,7 +47,7 @@ class EngineManager(private val context: Context) {
 
     suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5, backend: ComputeBackend = ComputeBackend.CPU): GtpEngine = mutex.withLock {
         if (type == currentType && engine?.isRunning() == true) {
-            return@withLock engine!!
+            return@withLock engine ?: throw IllegalStateException("Engine marked running but is null")
         }
         close()
 
@@ -109,8 +109,7 @@ class EngineManager(private val context: Context) {
         val destFile = File(destDir, fileName)
 
         if (!destFile.exists()) {
-            val tmpFile = File(destDir, "$fileName.tmp")
-            tmpFile.delete()
+            val tmpFile = File(destDir, "$fileName.${System.currentTimeMillis()}.tmp")
             context.assets.open(assetPath).use { input ->
                 tmpFile.outputStream().use { output ->
                     input.copyTo(output)

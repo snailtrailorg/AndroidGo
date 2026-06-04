@@ -158,7 +158,7 @@ class GoGame(initialSize: Int = 19) {
     fun setHandicap(n: Int) {
         require(n in 0..9) { "Handicap must be 0-9" }
         if (n == 0) {
-            _state.value = _state.value.copy(handicap = 0, currentPlayer = StoneColor.Black)
+            _state.value = _state.value.copy(handicap = 0, komi = 3.75f, currentPlayer = StoneColor.Black)
             return
         }
         val sz = _state.value.size
