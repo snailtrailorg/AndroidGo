@@ -1,0 +1,6 @@
+{
+  global:
+    katago_gtp_main;
+  local:
+    *;
+};

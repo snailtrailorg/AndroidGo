@@ -512,7 +512,6 @@ class MainActivity : ComponentActivity() {
             engine.init(boardSize, komi)
 
             val stones = goGame.state.value.stones
-            Log.d(TAG, "initAiEngine syncing ${stones.size} stones: $stones")
             for ((pos, color) in stones) {
                 val (row, col) = pos
                 engine.playMove(row, col, color == StoneColor.Black)
@@ -542,7 +541,6 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        Log.d(TAG, "triggerAiMove start: gen=$gen currentPlayer=${state.currentPlayer} moveCount=${state.moveHistory.size}")
         lifecycleScope.launch {
             aiThinkingState(true)
             try {
@@ -571,7 +569,6 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val aiBlack = state.currentPlayer == StoneColor.Black
-                Log.d(TAG, "genmove from triggerAiMove: gen=$gen aiBlack=$aiBlack")
                 val ok = withContext(Dispatchers.IO) { engine.generateMove(aiBlack) }
 
                 if (ok) {
@@ -601,7 +598,6 @@ class MainActivity : ComponentActivity() {
                     // one frame, sometimes skipping the board redraw.
                     kotlinx.coroutines.delay(50)
                 } else {
-                    Log.d(TAG, "triggerAiMove gen=$gen generateMove FAILED — calling goGame.pass() as fallback")
                     withContext(Dispatchers.Main) { goGame.pass() }
                     // Engine pipe is dirty after interrupted genmove — restart fresh next turn
                     withContext(Dispatchers.IO) { engineManager.close() }

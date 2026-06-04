@@ -48,22 +48,17 @@ std::vector<std::string> splitTokens(const std::string &s) {
 }
 
 void GtpClient::killProcess() {
-    GTP_LOG("killProcess: closing stdin=%d stdout=%d engineHandle=%p thread=%lu",
-            m_stdinFd, m_stdoutFd, m_engineHandle, (unsigned long)m_engineThread);
     // Signal the engine thread to exit by closing stdin.
     // The engine's getline(cin) will see EOF and exit the GTP loop.
     if (m_stdinFd >= 0) { close(m_stdinFd); m_stdinFd = -1; }
     // Wait for engine thread to finish before cleanup.
-    // Search is bounded by maxVisits (100) so this is fast.
     if (m_engineThread) {
         pthread_join(m_engineThread, nullptr);
         m_engineThread = 0;
-        GTP_LOG("killProcess: engine thread joined");
     }
     // Safe to clean up now — thread has exited
     if (m_stdoutFd >= 0) { close(m_stdoutFd); m_stdoutFd = -1; }
     if (m_engineHandle) { dlclose(m_engineHandle); m_engineHandle = nullptr; }
-    GTP_LOG("killProcess: done");
 }
 
 // --- GtpClient ---

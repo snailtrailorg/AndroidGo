@@ -11,5 +11,10 @@
 #include <CL/cl.h>
 #endif
 
+// On Android, OpenCL calls are routed through a runtime dispatch table.
+// Include the dispatch header so the OCL() macro is available everywhere.
+#ifdef __ANDROID__
+#include "opencl_dispatch.h"
+#endif
 
 #endif //NEURALNET_OPENCLINCLUDES_H

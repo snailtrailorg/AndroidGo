@@ -97,12 +97,12 @@ cl_program OpenCLHelpers::compileProgram(const string& name, cl_context context,
   const char* lines[1] = {str.c_str()};
   const size_t sizes[1] = {str.size()};
   cl_int err;
-  cl_program program = clCreateProgramWithSource(context,1,lines,sizes,&err);
+  cl_program program = OCL(CreateProgramWithSource, context,1,lines,sizes,&err);
   CHECK_ERR(err);
 
   const string opts = options + " -cl-mad-enable -cl-fast-relaxed-math -cl-no-signed-zeros -cl-denorms-are-zero";
 
-  err = clBuildProgram(program, (cl_uint)devices.size(), devices.data(), opts.c_str(), NULL, NULL);
+  err = OCL(BuildProgram, program, (cl_uint)devices.size(), devices.data(), opts.c_str(), NULL, NULL);
   if(err != 0) {
     string s;
     s += OpenCLHelpers::getErrorMessage(err) + string("\n");
@@ -110,12 +110,12 @@ cl_program OpenCLHelpers::compileProgram(const string& name, cl_context context,
       cl_int err2;
       vector<char> buf(100000);
       size_t retSize;
-      err2 = clGetProgramBuildInfo(program, devices[i], CL_PROGRAM_BUILD_LOG, byteSizeofVectorContents(buf), buf.data(), &retSize);
+      err2 = OCL(GetProgramBuildInfo, program, devices[i], CL_PROGRAM_BUILD_LOG, byteSizeofVectorContents(buf), buf.data(), &retSize);
       CHECK_ERR(err2);
       s += "BUILD LOG FOR " + name + " ON DEVICE " + Global::intToString(i) + "\n";
       s += buf.data() + string("\n");
     }
-    clReleaseProgram(program);
+    OCL(ReleaseProgram, program);
     throw CompileError(s);
   }
   return program;
@@ -142,7 +142,7 @@ bool OpenCLHelpers::tryCompileProgram(
 
 cl_mem OpenCLHelpers::createReadOnlyBuffer(cl_context clContext, vector<float>& data) {
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
     byteSizeofVectorContents(data),
@@ -154,7 +154,7 @@ cl_mem OpenCLHelpers::createReadOnlyBuffer(cl_context clContext, vector<float>& 
 }
 cl_mem OpenCLHelpers::createReadOnlyBuffer(cl_context clContext, vector<half_t>& data) {
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
     byteSizeofVectorContents(data),
@@ -167,7 +167,7 @@ cl_mem OpenCLHelpers::createReadOnlyBuffer(cl_context clContext, vector<half_t>&
 
 cl_mem OpenCLHelpers::createReadWriteBuffer(cl_context clContext, vector<float>& data) {
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
     byteSizeofVectorContents(data),
@@ -179,7 +179,7 @@ cl_mem OpenCLHelpers::createReadWriteBuffer(cl_context clContext, vector<float>&
 }
 cl_mem OpenCLHelpers::createReadWriteBuffer(cl_context clContext, vector<half_t>& data) {
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
     byteSizeofVectorContents(data),
@@ -205,7 +205,7 @@ cl_mem OpenCLHelpers::createReadWriteBufferFloat(cl_context clContext, size_t nu
     numElts = 32;
 
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_WRITE,
     numElts * sizeof(float),
@@ -221,7 +221,7 @@ cl_mem OpenCLHelpers::createReadWriteBufferHalf(cl_context clContext, size_t num
     numElts = 32;
 
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_WRITE,
     numElts * sizeof(half_t),
@@ -237,7 +237,7 @@ cl_mem OpenCLHelpers::createReadWriteBufferBytes(cl_context clContext, size_t nu
     numBytes = 64;
 
   cl_int err;
-  cl_mem buf = clCreateBuffer(
+  cl_mem buf = OCL(CreateBuffer, 
     clContext,
     CL_MEM_READ_WRITE,
     numBytes,
@@ -253,20 +253,20 @@ void OpenCLHelpers::blockingReadBuffer(cl_command_queue commandQueue, cl_mem src
   dstBuf.resize(numElts);
   cl_bool blocking = CL_TRUE;
   cl_int err;
-  err = clEnqueueReadBuffer(commandQueue, srcBuf, blocking, 0, byteSizeofVectorContents(dstBuf), dstBuf.data(), 0, NULL, NULL);
+  err = OCL(EnqueueReadBuffer, commandQueue, srcBuf, blocking, 0, byteSizeofVectorContents(dstBuf), dstBuf.data(), 0, NULL, NULL);
   CHECK_ERR(err);
 }
 void OpenCLHelpers::blockingReadBuffer(cl_command_queue commandQueue, cl_mem srcBuf, size_t numElts, float* dstBuf) {
   cl_bool blocking = CL_TRUE;
   cl_int err;
-  err = clEnqueueReadBuffer(commandQueue, srcBuf, blocking, 0, numElts * sizeof(float), dstBuf, 0, NULL, NULL);
+  err = OCL(EnqueueReadBuffer, commandQueue, srcBuf, blocking, 0, numElts * sizeof(float), dstBuf, 0, NULL, NULL);
   CHECK_ERR(err);
 }
 void OpenCLHelpers::blockingReadBuffer(cl_command_queue commandQueue, cl_mem srcBuf, size_t numElts, std::vector<half_t>& dstBuf) {
   dstBuf.resize(numElts);
   cl_bool blocking = CL_TRUE;
   cl_int err;
-  err = clEnqueueReadBuffer(commandQueue, srcBuf, blocking, 0, byteSizeofVectorContents(dstBuf), dstBuf.data(), 0, NULL, NULL);
+  err = OCL(EnqueueReadBuffer, commandQueue, srcBuf, blocking, 0, byteSizeofVectorContents(dstBuf), dstBuf.data(), 0, NULL, NULL);
   CHECK_ERR(err);
 }
 void OpenCLHelpers::blockingReadBufferHalfToFloat(cl_command_queue commandQueue, cl_mem srcBuf, size_t numElts, std::vector<float>& dstBuf) {
@@ -302,9 +302,10 @@ vector<DeviceInfo> DeviceInfo::getAllDeviceInfosOnSystem(Logger* logger) {
   static constexpr size_t maxDevices = MAX_DEVICES + 1024;
 
   cl_int err;
+  // Quick sanity check: call a dispatch function directly
   cl_uint numPlatforms;
   vector<cl_platform_id> platformIds(maxPlatforms);
-  err = clGetPlatformIDs((cl_uint)platformIds.size(), platformIds.data(), &numPlatforms);
+  err = OCL(GetPlatformIDs, (cl_uint)platformIds.size(), platformIds.data(), &numPlatforms);
   CHECK_ERR(err);
   if(numPlatforms > platformIds.size())
     throw StringError("OpenCL: more platforms found (" + Global::uint64ToString(numPlatforms) + ") than expected maximum (" + Global::uint64ToString(platformIds.size()) + ")");
@@ -323,19 +324,19 @@ vector<DeviceInfo> DeviceInfo::getAllDeviceInfosOnSystem(Logger* logger) {
     size_t sizeRet;
     cl_platform_id platformId = platformIds[platformIdx];
 
-    err = clGetPlatformInfo(platformId, CL_PLATFORM_NAME, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetPlatformInfo, platformId, CL_PLATFORM_NAME, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
     string name = string(buf.data());
 
-    err = clGetPlatformInfo(platformId, CL_PLATFORM_VENDOR, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetPlatformInfo, platformId, CL_PLATFORM_VENDOR, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
     string vendor = string(buf.data());
 
-    err = clGetPlatformInfo(platformId, CL_PLATFORM_VERSION, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetPlatformInfo, platformId, CL_PLATFORM_VERSION, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
@@ -345,12 +346,37 @@ vector<DeviceInfo> DeviceInfo::getAllDeviceInfosOnSystem(Logger* logger) {
     if(logger != NULL)
       logger->write("Found OpenCL Platform " + Global::uint32ToString(platformIdx) + ": " + desc);
 
-    cl_uint numDevices;
-    err = clGetDeviceIDs(
-      platformId, CL_DEVICE_TYPE_CPU | CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, (cl_uint)(deviceIds.size() - numDevicesTotal),
-      deviceIds.data() + numDevicesTotal, &numDevices);
+    cl_uint numDevices = 0;
+
+    // Some OpenCL implementations (notably Qualcomm Adreno on Android)
+    // reject combined device-type queries with CL_INVALID_DEVICE_TYPE.
+    // Fall back through individual types until we find devices.
+    {
+      cl_device_type queryTypes[] = {
+        CL_DEVICE_TYPE_GPU,
+        CL_DEVICE_TYPE_ACCELERATOR,
+        CL_DEVICE_TYPE_CPU,
+        CL_DEVICE_TYPE_DEFAULT,
+        CL_DEVICE_TYPE_ALL
+      };
+      for(size_t ti = 0; ti < sizeof(queryTypes)/sizeof(queryTypes[0]); ti++) {
+        cl_uint n = 0;
+        cl_int qerr = OCL(GetDeviceIDs, 
+          platformId, queryTypes[ti],
+          (cl_uint)(deviceIds.size() - numDevicesTotal),
+          deviceIds.data() + numDevicesTotal, &n);
+        if(qerr == CL_SUCCESS && n > 0) {
+          numDevices += n;
+        } else if(qerr != CL_DEVICE_NOT_FOUND && qerr != CL_INVALID_DEVICE_TYPE) {
+          // Log unexpected errors but continue trying other types
+          if(logger != NULL)
+            logger->write("OpenCL device query for type " + Global::uint64ToString(queryTypes[ti]) + " returned error " + Global::intToString(qerr));
+        }
+      }
+    }
+
     //Allow there to be 0 devices on this platform, just move on to the next
-    if(err == CL_DEVICE_NOT_FOUND) {
+    if(numDevices == 0) {
       if(logger != NULL)
         logger->write("Found 0 device(s) on platform " + Global::uint32ToString(platformIdx) + " with type CPU or GPU or Accelerator, skipping");
       continue;
@@ -374,31 +400,35 @@ vector<DeviceInfo> DeviceInfo::getAllDeviceInfosOnSystem(Logger* logger) {
   for(int gpuIdx = 0; gpuIdx<numDevicesTotal; gpuIdx++) {
     size_t sizeRet;
 
-    err = clGetDeviceInfo(deviceIds[gpuIdx], CL_DEVICE_NAME, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetDeviceInfo, deviceIds[gpuIdx], CL_DEVICE_NAME, bufLen, buf.data(), &sizeRet);
+    if(err != CL_SUCCESS) {
+      if(logger != NULL)
+        logger->write("Skipping device " + Global::intToString(gpuIdx) + ": GetDeviceInfo(NAME) returned " + Global::intToString(err));
+      continue;
+    }
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
-    CHECK_ERR(err);
     string name = string(buf.data());
 
-    err = clGetDeviceInfo(deviceIds[gpuIdx], CL_DEVICE_VENDOR, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetDeviceInfo, deviceIds[gpuIdx], CL_DEVICE_VENDOR, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
     string vendor = string(buf.data());
 
     cl_device_type deviceType;
-    err = clGetDeviceInfo(deviceIds[gpuIdx], CL_DEVICE_TYPE, sizeof(cl_device_type), &deviceType, &sizeRet);
+    err = OCL(GetDeviceInfo, deviceIds[gpuIdx], CL_DEVICE_TYPE, sizeof(cl_device_type), &deviceType, &sizeRet);
     if(sizeRet > sizeof(cl_device_type))
       throw StringError("OpenCL: device type info returned unexpected size " + Global::uint64ToString(sizeRet));
     CHECK_ERR(err);
 
-    err = clGetDeviceInfo(deviceIds[gpuIdx], CL_DEVICE_VERSION, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetDeviceInfo, deviceIds[gpuIdx], CL_DEVICE_VERSION, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
     string openCLVersion = string(buf.data());
 
-    err = clGetDeviceInfo(deviceIds[gpuIdx], CL_DEVICE_EXTENSIONS, bufLen, buf.data(), &sizeRet);
+    err = OCL(GetDeviceInfo, deviceIds[gpuIdx], CL_DEVICE_EXTENSIONS, bufLen, buf.data(), &sizeRet);
     if(sizeRet >= bufLen-1)
       throw StringError("OpenCL: platform/device info string unexpectedly long, buffer too small");
     CHECK_ERR(err);
@@ -546,7 +576,7 @@ DevicesContext::DevicesContext(const vector<DeviceInfo>& allDeviceInfos, const v
     }
 
     cl_int err;
-    initializedPlatform->context = clCreateContext(
+    initializedPlatform->context = OCL(CreateContext, 
       initializedPlatform->properties.data(),
       (cl_uint)initializedPlatform->deviceIdsToUseForThisPlatform.size(),
       initializedPlatform->deviceIdsToUseForThisPlatform.data(),
@@ -567,9 +597,9 @@ DevicesContext::DevicesContext(const vector<DeviceInfo>& allDeviceInfos, const v
     cl_int err;
     cl_command_queue commandQueue;
     if(enableProfiling)
-      commandQueue = clCreateCommandQueue(context, deviceId, CL_QUEUE_PROFILING_ENABLE, &err);
+      commandQueue = OCL(CreateCommandQueue, context, deviceId, CL_QUEUE_PROFILING_ENABLE, &err);
     else
-      commandQueue = clCreateCommandQueue(context, deviceId, 0, &err);
+      commandQueue = OCL(CreateCommandQueue, context, deviceId, 0, &err);
 
     CHECK_ERR(err);
     InitializedDevice* device = new InitializedDevice();
@@ -599,15 +629,15 @@ DevicesContext::DevicesContext(const vector<DeviceInfo>& allDeviceInfos, const v
 DevicesContext::~DevicesContext() {
   for(int i = 0; i<devicesToUse.size(); i++) {
     InitializedDevice* device = devicesToUse[i];
-    clFlush(device->commandQueue);
-    clFinish(device->commandQueue);
-    clReleaseCommandQueue(device->commandQueue);
+    OCL(Flush, device->commandQueue);
+    OCL(Finish, device->commandQueue);
+    OCL(ReleaseCommandQueue, device->commandQueue);
     delete device;
   }
 
   for(auto iter = initializedPlatforms.begin(); iter != initializedPlatforms.end(); ++iter) {
     InitializedPlatform* initializedPlatform = *iter;
-    clReleaseContext(initializedPlatform->context);
+    OCL(ReleaseContext, initializedPlatform->context);
     delete initializedPlatform;
   }
 }
@@ -682,18 +712,18 @@ cl_int OpenCLHelpers::doBatchedXGemm_KM_KN_NM(
   int numBatchElts,
   cl_event* eventBuf
 ) {
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 7, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&C);
-  clSetKernelArg(kernel,10, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel,11, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 6, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 7, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 9, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel,10, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel,11, sizeof(int), (void *)&N);
 
   // Always check these
   testAssert(M % tuneParams.MWG == 0);
@@ -710,7 +740,7 @@ cl_int OpenCLHelpers::doBatchedXGemm_KM_KN_NM(
   size_t localSizes[nKernelDims] = {MDIMC, NDIMC, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -725,12 +755,12 @@ cl_int OpenCLHelpers::doBatchedHGemmWmma_KM_KN_NM(
   int numBatchElts,
   cl_event* eventBuf
 ) {
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 5, sizeof(cl_mem), (void *)&C);
 
   // Always check these
   testAssert(M % tuneParams.hGemmWmma.MWG == 0);
@@ -756,7 +786,7 @@ cl_int OpenCLHelpers::doBatchedHGemmWmma_KM_KN_NM(
   size_t localSizes[nKernelDims] = {MWAVE/MWARP * WARP_SIZE, NWAVE/NWARP, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -770,12 +800,12 @@ cl_int OpenCLHelpers::doHGemmWmma_NCHW_ICOC(
   cl_mem A, cl_mem B, cl_mem C,
   cl_event* eventBuf
 ) {
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&cSize);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&hwSize);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&ocSize);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&cSize);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&hwSize);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&ocSize);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 5, sizeof(cl_mem), (void *)&C);
 
   // Always check these
   testAssert(ocSize % tuneParams.hGemmWmmaNCHW.NWG == 0);
@@ -804,7 +834,7 @@ cl_int OpenCLHelpers::doHGemmWmma_NCHW_ICOC(
   size_t localSizes[nKernelDims] = {MWAVE/MWARP * WARP_SIZE, NWAVE/NWARP, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -821,16 +851,16 @@ cl_int OpenCLHelpers::doBatchedXGemmDirect_KM_KN_NM(
 ) {
   int cTranspose = 0;
 
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&C);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 9, sizeof(int), (void *)&cTranspose);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 5, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 7, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 9, sizeof(int), (void *)&cTranspose);
 
   static constexpr int nKernelDims = 3;
   const size_t WGD = tuneParams.xGemmDirect.WGD;
@@ -844,7 +874,7 @@ cl_int OpenCLHelpers::doBatchedXGemmDirect_KM_KN_NM(
   size_t localSizes[nKernelDims] = {MDIMCD, NDIMCD, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -862,19 +892,19 @@ cl_int OpenCLHelpers::doStridedBatchedXGemmDirect_KM_KN_NM(
 ) {
   int cTranspose = 0;
 
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&aStride);
-  clSetKernelArg(kernel, 6, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 7, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&bStride);
-  clSetKernelArg(kernel, 9, sizeof(cl_mem), (void *)&C);
-  clSetKernelArg(kernel,10, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel,11, sizeof(int), (void *)&cStride);
-  clSetKernelArg(kernel,12, sizeof(int), (void *)&cTranspose);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&aStride);
+  OCL(SetKernelArg, kernel, 6, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 7, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&bStride);
+  OCL(SetKernelArg, kernel, 9, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel,10, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel,11, sizeof(int), (void *)&cStride);
+  OCL(SetKernelArg, kernel,12, sizeof(int), (void *)&cTranspose);
 
   static constexpr int nKernelDims = 3;
   const size_t WGD = tuneParams.xGemmDirect.WGD;
@@ -888,7 +918,7 @@ cl_int OpenCLHelpers::doStridedBatchedXGemmDirect_KM_KN_NM(
   size_t localSizes[nKernelDims] = {MDIMCD, NDIMCD, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -905,16 +935,16 @@ cl_int OpenCLHelpers::doBatchedXGemmDirect_MK_NK_MN(
 ) {
   int cTranspose = 1;
 
-  clSetKernelArg(kernel, 0, sizeof(int), (void *)&M);
-  clSetKernelArg(kernel, 1, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&A);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 5, sizeof(cl_mem), (void *)&B);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&K);
-  clSetKernelArg(kernel, 7, sizeof(cl_mem), (void *)&C);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&N);
-  clSetKernelArg(kernel, 9, sizeof(int), (void *)&cTranspose);
+  OCL(SetKernelArg, kernel, 0, sizeof(int), (void *)&M);
+  OCL(SetKernelArg, kernel, 1, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&A);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 5, sizeof(cl_mem), (void *)&B);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&K);
+  OCL(SetKernelArg, kernel, 7, sizeof(cl_mem), (void *)&C);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&N);
+  OCL(SetKernelArg, kernel, 9, sizeof(int), (void *)&cTranspose);
 
   static constexpr int nKernelDims = 3;
   const size_t WGD = tuneParams.xGemmDirect.WGD;
@@ -928,7 +958,7 @@ cl_int OpenCLHelpers::doBatchedXGemmDirect_MK_NK_MN(
   size_t localSizes[nKernelDims] = {MDIMCD, NDIMCD, 1};
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -948,16 +978,16 @@ cl_int OpenCLHelpers::doWinogradTransform(
   int inChannelsPadded = roundUpToMultipleInt(inChannels, inChannelsPadMultiple);
   int batchNumTilesPadded = roundUpToMultipleInt(batchSize * numTilesX * numTilesY, batchNumTilesPadMultiple);
 
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&input);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&convWorkspace);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 3, sizeof(int), (void *)&nnXLen);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&nnYLen);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&numTilesX);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&numTilesY);
-  clSetKernelArg(kernel, 7, sizeof(int), (void *)&inChannels);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&inChannelsPadded);
-  clSetKernelArg(kernel, 9, sizeof(int), (void *)&batchNumTilesPadded);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&input);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&convWorkspace);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 3, sizeof(int), (void *)&nnXLen);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&nnYLen);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&numTilesX);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&numTilesY);
+  OCL(SetKernelArg, kernel, 7, sizeof(int), (void *)&inChannels);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&inChannelsPadded);
+  OCL(SetKernelArg, kernel, 9, sizeof(int), (void *)&batchNumTilesPadded);
 
   static constexpr int nKernelDims = 2;
   size_t localSizes[nKernelDims] = {
@@ -971,7 +1001,7 @@ cl_int OpenCLHelpers::doWinogradTransform(
   };
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -992,19 +1022,19 @@ cl_int OpenCLHelpers::doWinogradTransformWithBNAct(
   int inChannelsPadded = roundUpToMultipleInt(inChannels, inChannelsPadMultiple);
   int batchNumTilesPadded = roundUpToMultipleInt(batchSize * numTilesX * numTilesY, batchNumTilesPadMultiple);
 
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&input);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&convWorkspace);
-  clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&scaleBuf);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&biasBuf);
-  clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&mask);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&nnXLen);
-  clSetKernelArg(kernel, 7, sizeof(int), (void *)&nnYLen);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&numTilesX);
-  clSetKernelArg(kernel, 9, sizeof(int), (void *)&numTilesY);
-  clSetKernelArg(kernel, 10, sizeof(int), (void *)&inChannels);
-  clSetKernelArg(kernel, 11, sizeof(int), (void *)&inChannelsPadded);
-  clSetKernelArg(kernel, 12, sizeof(int), (void *)&batchNumTilesPadded);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&input);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&convWorkspace);
+  OCL(SetKernelArg, kernel, 2, sizeof(cl_mem), (void *)&scaleBuf);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&biasBuf);
+  OCL(SetKernelArg, kernel, 4, sizeof(cl_mem), (void *)&mask);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&nnXLen);
+  OCL(SetKernelArg, kernel, 7, sizeof(int), (void *)&nnYLen);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&numTilesX);
+  OCL(SetKernelArg, kernel, 9, sizeof(int), (void *)&numTilesY);
+  OCL(SetKernelArg, kernel, 10, sizeof(int), (void *)&inChannels);
+  OCL(SetKernelArg, kernel, 11, sizeof(int), (void *)&inChannelsPadded);
+  OCL(SetKernelArg, kernel, 12, sizeof(int), (void *)&batchNumTilesPadded);
 
   static constexpr int nKernelDims = 2;
   size_t localSizes[nKernelDims] = {
@@ -1018,7 +1048,7 @@ cl_int OpenCLHelpers::doWinogradTransformWithBNAct(
   };
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -1038,16 +1068,16 @@ cl_int OpenCLHelpers::doWinogradUntransform(
   int outChannelsPadded = roundUpToMultipleInt(outChannels, outChannelsPadMultiple);
   int batchNumTilesPadded = roundUpToMultipleInt(batchSize * numTilesX * numTilesY, batchNumTilesPadMultiple);
 
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&convWorkspace2);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&output);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 3, sizeof(int), (void *)&nnXLen);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&nnYLen);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&numTilesX);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&numTilesY);
-  clSetKernelArg(kernel, 7, sizeof(int), (void *)&outChannels);
-  clSetKernelArg(kernel, 8, sizeof(int), (void *)&outChannelsPadded);
-  clSetKernelArg(kernel, 9, sizeof(int), (void *)&batchNumTilesPadded);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&convWorkspace2);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&output);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 3, sizeof(int), (void *)&nnXLen);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&nnYLen);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&numTilesX);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&numTilesY);
+  OCL(SetKernelArg, kernel, 7, sizeof(int), (void *)&outChannels);
+  OCL(SetKernelArg, kernel, 8, sizeof(int), (void *)&outChannelsPadded);
+  OCL(SetKernelArg, kernel, 9, sizeof(int), (void *)&batchNumTilesPadded);
 
   static constexpr int nKernelDims = 3;
   size_t localSizes[nKernelDims] = {
@@ -1063,7 +1093,7 @@ cl_int OpenCLHelpers::doWinogradUntransform(
   };
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -1090,16 +1120,16 @@ cl_int OpenCLHelpers::performGPoolMask(
     roundUpToMultiple(batchSize,localSizes[2])
   };
 
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&gpoolConvOut);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&gpoolConcat);
-  clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&mask);
-  clSetKernelArg(kernel, 3, sizeof(cl_mem), (void *)&maskSum);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&gpoolChannels);
-  clSetKernelArg(kernel, 6, sizeof(int), (void *)&nnXYLen);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&gpoolConvOut);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&gpoolConcat);
+  OCL(SetKernelArg, kernel, 2, sizeof(cl_mem), (void *)&mask);
+  OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (void *)&maskSum);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&gpoolChannels);
+  OCL(SetKernelArg, kernel, 6, sizeof(int), (void *)&nnXYLen);
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -1125,15 +1155,15 @@ cl_int OpenCLHelpers::performValueHeadPool(
     roundUpToMultiple(batchSize,localSizes[2])
   };
 
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&gpoolConvOut);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&gpoolConcat);
-  clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&maskSum);
-  clSetKernelArg(kernel, 3, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&gpoolChannels);
-  clSetKernelArg(kernel, 5, sizeof(int), (void *)&nnXYLen);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&gpoolConvOut);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&gpoolConcat);
+  OCL(SetKernelArg, kernel, 2, sizeof(cl_mem), (void *)&maskSum);
+  OCL(SetKernelArg, kernel, 3, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&gpoolChannels);
+  OCL(SetKernelArg, kernel, 5, sizeof(int), (void *)&nnXYLen);
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -1164,14 +1194,14 @@ cl_int OpenCLHelpers::computeMaskSums(
 
   int numChannels = 1;
   int nnXYLen = nnXLen * nnYLen;
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&mask);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&maskSum);
-  clSetKernelArg(kernel, 2, sizeof(int), (void *)&batchSize);
-  clSetKernelArg(kernel, 3, sizeof(int), (void *)&numChannels);
-  clSetKernelArg(kernel, 4, sizeof(int), (void *)&nnXYLen);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (void *)&mask);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (void *)&maskSum);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (void *)&batchSize);
+  OCL(SetKernelArg, kernel, 3, sizeof(int), (void *)&numChannels);
+  OCL(SetKernelArg, kernel, 4, sizeof(int), (void *)&nnXYLen);
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;
@@ -1186,16 +1216,16 @@ cl_int OpenCLHelpers::doAddPointWise(
   int totalSize,
   cl_event* eventBuf
 ) {
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&acc);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&value);
-  clSetKernelArg(kernel, 2, sizeof(int), (const void *)&totalSize);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&acc);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&value);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (const void *)&totalSize);
 
   static constexpr int nKernelDims = 1;
   size_t globalSizes[nKernelDims] = {powerOf2ify((size_t)totalSize)};
   size_t* localSizes = NULL;
 
   cl_int err;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, eventBuf
   );
   return err;

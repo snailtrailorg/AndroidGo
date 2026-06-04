@@ -68,8 +68,8 @@ using half_t = half_float::half;
     handle->profileCallbacks.push_back(std::function<void()>([event,counter,timeTaken,_profileName]() { \
           cl_int profileErr;                                            \
           cl_ulong time_start, time_end;                                \
-          profileErr = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); CHECK_ERR(profileErr); \
-          profileErr = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); CHECK_ERR(profileErr) ; \
+          profileErr = OCL(GetEventProfilingInfo, event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); CHECK_ERR(profileErr); \
+          profileErr = OCL(GetEventProfilingInfo, event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); CHECK_ERR(profileErr) ; \
           *timeTaken += (time_end - time_start) * 1e-9;                 \
           (*counter)++;                                                 \
         }));                                                            \
@@ -101,6 +101,9 @@ static void checkBufferSize(int batchSize, int nnXLen, int nnYLen, int channels)
 void NeuralNet::globalInitialize() {
   // If int is only 2 bytes, this implementation won't work right now.
   static_assert(sizeof(int) >= 4, "");
+#ifdef __ANDROID__
+  ocl_init();
+#endif
 }
 
 void NeuralNet::globalCleanup() {
@@ -136,8 +139,13 @@ const ModelDesc& NeuralNet::getModelDesc(const LoadedModel* loadedModel) {
 
 //---------------------------------------------------------------------------------------------------------
 
-// Wraps cl_program with a destructor that calls clReleaseProgram
+// Wraps cl_program with a destructor that calls through the dispatch table
+#ifdef __ANDROID__
+static cl_int oclReleaseProgram(cl_program p) { return ocl.ReleaseProgram(p); }
+using CLProgram = WrappedWithDeleter<cl_program,int,oclReleaseProgram>;
+#else
 using CLProgram = WrappedWithDeleter<cl_program,int,clReleaseProgram>;
+#endif
 
 struct CompiledPrograms {
   const OpenCLTuneParams tuneParams;
@@ -492,8 +500,13 @@ void NeuralNet::freeComputeContext(ComputeContext* computeContext) {
 
 //--------------------------------------------------------------
 
-// Wraps cl_kernel with a destructor that calls clReleaseKernel
+// Wraps cl_kernel with a destructor that calls through the dispatch table
+#ifdef __ANDROID__
+static cl_int oclReleaseKernel(cl_kernel k) { return ocl.ReleaseKernel(k); }
+using CLKernel = WrappedWithDeleter<cl_kernel,int,oclReleaseKernel>;
+#else
 using CLKernel = WrappedWithDeleter<cl_kernel,int,clReleaseKernel>;
+#endif
 
 struct ComputeHandleInternal {
   ComputeContext* computeContext;
@@ -564,76 +577,76 @@ struct ComputeHandleInternal {
     usingFP16TensorCoresFor1x1 = progs->usingFP16TensorCoresFor1x1;
 
     cl_int err;
-    conv2dNCHWKernel = clCreateKernel(progs->conv2dNCHWProgram, "conv2dNCHW", &err);
+    conv2dNCHWKernel = OCL(CreateKernel, progs->conv2dNCHWProgram, "conv2dNCHW", &err);
     CHECK_ERR(err);
 
-    winogradConv3x3NCHWTransformKernel = clCreateKernel(progs->winogradConv3x3NCHWTransformProgram, "transform", &err);
+    winogradConv3x3NCHWTransformKernel = OCL(CreateKernel, progs->winogradConv3x3NCHWTransformProgram, "transform", &err);
     CHECK_ERR(err);
-    winogradConv3x3NCHWBNReluTransformKernel = clCreateKernel(progs->winogradConv3x3NCHWBNReluTransformProgram, "bnActTransform", &err);
+    winogradConv3x3NCHWBNReluTransformKernel = OCL(CreateKernel, progs->winogradConv3x3NCHWBNReluTransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    winogradConv3x3NCHWBNMishTransformKernel = clCreateKernel(progs->winogradConv3x3NCHWBNMishTransformProgram, "bnActTransform", &err);
+    winogradConv3x3NCHWBNMishTransformKernel = OCL(CreateKernel, progs->winogradConv3x3NCHWBNMishTransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    winogradConv3x3NCHWBNMishScale8TransformKernel = clCreateKernel(progs->winogradConv3x3NCHWBNMishScale8TransformProgram, "bnActTransform", &err);
+    winogradConv3x3NCHWBNMishScale8TransformKernel = OCL(CreateKernel, progs->winogradConv3x3NCHWBNMishScale8TransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    winogradConv3x3NCHWUntransformKernel = clCreateKernel(progs->winogradConv3x3NCHWUntransformProgram, "untransform", &err);
-    CHECK_ERR(err);
-
-    winogradConv5x5NCHWTransformKernel = clCreateKernel(progs->winogradConv5x5NCHWTransformProgram, "transform", &err);
-    CHECK_ERR(err);
-    winogradConv5x5NCHWBNReluTransformKernel = clCreateKernel(progs->winogradConv5x5NCHWBNReluTransformProgram, "bnActTransform", &err);
-    CHECK_ERR(err);
-    winogradConv5x5NCHWBNMishTransformKernel = clCreateKernel(progs->winogradConv5x5NCHWBNMishTransformProgram, "bnActTransform", &err);
-    CHECK_ERR(err);
-    winogradConv5x5NCHWBNMishScale8TransformKernel = clCreateKernel(progs->winogradConv5x5NCHWBNMishScale8TransformProgram, "bnActTransform", &err);
-    CHECK_ERR(err);
-    winogradConv5x5NCHWUntransformKernel = clCreateKernel(progs->winogradConv5x5NCHWUntransformProgram, "untransform", &err);
+    winogradConv3x3NCHWUntransformKernel = OCL(CreateKernel, progs->winogradConv3x3NCHWUntransformProgram, "untransform", &err);
     CHECK_ERR(err);
 
-    scaleBiasMaskNCHWKernel = clCreateKernel(progs->scaleBiasMaskNCHWProgram, "scaleBiasMaskActNCHW", &err);
+    winogradConv5x5NCHWTransformKernel = OCL(CreateKernel, progs->winogradConv5x5NCHWTransformProgram, "transform", &err);
     CHECK_ERR(err);
-    scaleBiasMaskReluNCHWKernel = clCreateKernel(progs->scaleBiasMaskReluNCHWProgram, "scaleBiasMaskActNCHW", &err);
+    winogradConv5x5NCHWBNReluTransformKernel = OCL(CreateKernel, progs->winogradConv5x5NCHWBNReluTransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    scaleBiasMaskMishNCHWKernel = clCreateKernel(progs->scaleBiasMaskMishNCHWProgram, "scaleBiasMaskActNCHW", &err);
+    winogradConv5x5NCHWBNMishTransformKernel = OCL(CreateKernel, progs->winogradConv5x5NCHWBNMishTransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    scaleBiasMaskMishScale8NCHWKernel = clCreateKernel(progs->scaleBiasMaskMishScale8NCHWProgram, "scaleBiasMaskActNCHW", &err);
+    winogradConv5x5NCHWBNMishScale8TransformKernel = OCL(CreateKernel, progs->winogradConv5x5NCHWBNMishScale8TransformProgram, "bnActTransform", &err);
     CHECK_ERR(err);
-    addPointWiseKernel = clCreateKernel(progs->addPointWiseProgram, "addPointWise", &err);
+    winogradConv5x5NCHWUntransformKernel = OCL(CreateKernel, progs->winogradConv5x5NCHWUntransformProgram, "untransform", &err);
     CHECK_ERR(err);
-    sumChannelsNCHWKernel = clCreateKernel(progs->sumChannelsNCHWProgram, "sumChannelsNCHW", &err);
+
+    scaleBiasMaskNCHWKernel = OCL(CreateKernel, progs->scaleBiasMaskNCHWProgram, "scaleBiasMaskActNCHW", &err);
     CHECK_ERR(err);
-    gPoolChannelsNCHWMaskKernel = clCreateKernel(progs->gPoolChannelsNCHWMaskProgram, "gPoolChannelsNCHWMask", &err);
+    scaleBiasMaskReluNCHWKernel = OCL(CreateKernel, progs->scaleBiasMaskReluNCHWProgram, "scaleBiasMaskActNCHW", &err);
     CHECK_ERR(err);
-    valueHeadPoolChannelsNCHWKernel = clCreateKernel(progs->valueHeadPoolChannelsNCHWProgram, "valueHeadPoolChannelsNCHW", &err);
+    scaleBiasMaskMishNCHWKernel = OCL(CreateKernel, progs->scaleBiasMaskMishNCHWProgram, "scaleBiasMaskActNCHW", &err);
     CHECK_ERR(err);
-    addChannelBiasesNCHWKernel = clCreateKernel(progs->addChannelBiasesNCHWProgram, "addChannelBiasesNCHW", &err);
+    scaleBiasMaskMishScale8NCHWKernel = OCL(CreateKernel, progs->scaleBiasMaskMishScale8NCHWProgram, "scaleBiasMaskActNCHW", &err);
     CHECK_ERR(err);
-    addCBiasesNCKernel = clCreateKernel(progs->addCBiasesNCProgram, "addCBiasesNCAct", &err);
+    addPointWiseKernel = OCL(CreateKernel, progs->addPointWiseProgram, "addPointWise", &err);
     CHECK_ERR(err);
-    addCBiasesNCReluKernel = clCreateKernel(progs->addCBiasesNCReluProgram, "addCBiasesNCAct", &err);
+    sumChannelsNCHWKernel = OCL(CreateKernel, progs->sumChannelsNCHWProgram, "sumChannelsNCHW", &err);
     CHECK_ERR(err);
-    addCBiasesNCMishKernel = clCreateKernel(progs->addCBiasesNCMishProgram, "addCBiasesNCAct", &err);
+    gPoolChannelsNCHWMaskKernel = OCL(CreateKernel, progs->gPoolChannelsNCHWMaskProgram, "gPoolChannelsNCHWMask", &err);
     CHECK_ERR(err);
-    addCBiasesNCMishScale8Kernel = clCreateKernel(progs->addCBiasesNCMishScale8Program, "addCBiasesNCAct", &err);
+    valueHeadPoolChannelsNCHWKernel = OCL(CreateKernel, progs->valueHeadPoolChannelsNCHWProgram, "valueHeadPoolChannelsNCHW", &err);
     CHECK_ERR(err);
-    extractChannel0NCHWKernel = clCreateKernel(progs->extractChannel0NCHWProgram, "extractChannel0NCHW", &err);
+    addChannelBiasesNCHWKernel = OCL(CreateKernel, progs->addChannelBiasesNCHWProgram, "addChannelBiasesNCHW", &err);
     CHECK_ERR(err);
-    xgemmDirectBatchedTTKernelAlwaysFP32 = clCreateKernel(progs->xgemmDirectProgramAlwaysFP32, "XgemmDirectBatchedTT", &err);
+    addCBiasesNCKernel = OCL(CreateKernel, progs->addCBiasesNCProgram, "addCBiasesNCAct", &err);
     CHECK_ERR(err);
-    xgemmDirectStridedBatchedNNKernel = clCreateKernel(progs->xgemmDirectProgram, "XgemmDirectStridedBatchedNN", &err);
+    addCBiasesNCReluKernel = OCL(CreateKernel, progs->addCBiasesNCReluProgram, "addCBiasesNCAct", &err);
+    CHECK_ERR(err);
+    addCBiasesNCMishKernel = OCL(CreateKernel, progs->addCBiasesNCMishProgram, "addCBiasesNCAct", &err);
+    CHECK_ERR(err);
+    addCBiasesNCMishScale8Kernel = OCL(CreateKernel, progs->addCBiasesNCMishScale8Program, "addCBiasesNCAct", &err);
+    CHECK_ERR(err);
+    extractChannel0NCHWKernel = OCL(CreateKernel, progs->extractChannel0NCHWProgram, "extractChannel0NCHW", &err);
+    CHECK_ERR(err);
+    xgemmDirectBatchedTTKernelAlwaysFP32 = OCL(CreateKernel, progs->xgemmDirectProgramAlwaysFP32, "XgemmDirectBatchedTT", &err);
+    CHECK_ERR(err);
+    xgemmDirectStridedBatchedNNKernel = OCL(CreateKernel, progs->xgemmDirectProgram, "XgemmDirectStridedBatchedNN", &err);
     CHECK_ERR(err);
     if(usingFP16TensorCores)
-      xgemmBatchedNNKernel = clCreateKernel(progs->xgemmProgram, "hgemmWmmaBatched", &err);
+      xgemmBatchedNNKernel = OCL(CreateKernel, progs->xgemmProgram, "hgemmWmmaBatched", &err);
     else
-      xgemmBatchedNNKernel = clCreateKernel(progs->xgemmProgram, "XgemmBatched", &err);
+      xgemmBatchedNNKernel = OCL(CreateKernel, progs->xgemmProgram, "XgemmBatched", &err);
     if(usingFP16TensorCoresFor1x1)
-      hgemmWmmaNCHWKernel = clCreateKernel(progs->hgemmWmmaNCHWProgram, "hgemmWmmaNCHW", &err);
+      hgemmWmmaNCHWKernel = OCL(CreateKernel, progs->hgemmWmmaNCHWProgram, "hgemmWmmaNCHW", &err);
     CHECK_ERR(err);
   }
 
   ~ComputeHandleInternal() {
     for(int i = 0; i<profileEvents.size(); i++) {
       if(profileEvents[i] != NULL)
-        clReleaseEvent(profileEvents[i]);
+        OCL(ReleaseEvent, profileEvents[i]);
     }
   }
 
@@ -690,13 +703,13 @@ static void addChannelBiases(ComputeHandleInternal* handle, cl_mem src, cl_mem b
   size_t* localSizes = NULL;
 
   cl_kernel kernel = handle->addChannelBiasesNCHWKernel;
-  clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&src);
-  clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&bias);
-  clSetKernelArg(kernel, 2, sizeof(int), (const void *)&ncSize);
-  clSetKernelArg(kernel, 3, sizeof(int), (const void *)&nnXYLen);
+  OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&src);
+  OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&bias);
+  OCL(SetKernelArg, kernel, 2, sizeof(int), (const void *)&ncSize);
+  OCL(SetKernelArg, kernel, 3, sizeof(int), (const void *)&nnXYLen);
 
   MAYBE_EVENT;
-  err = clEnqueueNDRangeKernel(
+  err = OCL(EnqueueNDRangeKernel, 
     handle->commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, MAYBE_EVENTREF
   );
   CHECK_ERR(err);
@@ -825,7 +838,7 @@ struct ScratchBuffers {
       return createReadWriteBufferBytes(handle->clContext, size);
     };
     std::function<void(cl_mem)> releaseFunc = [this](cl_mem buf) {
-      clReleaseMemObject(buf);
+      OCL(ReleaseMemObject, buf);
     };
 
     allocator = new SimpleAllocator<cl_mem>(allocateFunc, releaseFunc);
@@ -915,8 +928,8 @@ struct BatchNormLayer {
   }
 
   ~BatchNormLayer() {
-    clReleaseMemObject(mergedScaleBuf);
-    clReleaseMemObject(mergedBiasBuf);
+    OCL(ReleaseMemObject, mergedScaleBuf);
+    OCL(ReleaseMemObject, mergedBiasBuf);
   }
 
   void apply(ComputeHandleInternal* handle, int batchSize, cl_mem input, cl_mem output, cl_mem mask) const {
@@ -934,19 +947,19 @@ struct BatchNormLayer {
       Global::fatalError("bad activation");
     }
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&input);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&output);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), (const void *)&mergedScaleBuf);
-    clSetKernelArg(kernel, 3, sizeof(cl_mem), (const void *)&mergedBiasBuf);
-    clSetKernelArg(kernel, 4, sizeof(cl_mem), (const void *)&mask);
-    clSetKernelArg(kernel, 5, sizeof(int), (const void *)&batchSize);
-    clSetKernelArg(kernel, 6, sizeof(int), (const void *)&numChannels);
-    clSetKernelArg(kernel, 7, sizeof(int), (const void *)&nnXYLen);
+    OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&input);
+    OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&output);
+    OCL(SetKernelArg, kernel, 2, sizeof(cl_mem), (const void *)&mergedScaleBuf);
+    OCL(SetKernelArg, kernel, 3, sizeof(cl_mem), (const void *)&mergedBiasBuf);
+    OCL(SetKernelArg, kernel, 4, sizeof(cl_mem), (const void *)&mask);
+    OCL(SetKernelArg, kernel, 5, sizeof(int), (const void *)&batchSize);
+    OCL(SetKernelArg, kernel, 6, sizeof(int), (const void *)&numChannels);
+    OCL(SetKernelArg, kernel, 7, sizeof(int), (const void *)&nnXYLen);
 
     cl_int err;
     size_t* localSizes = NULL; //TODO actually pick these with tuning? Or fuse with conv untransform?
     MAYBE_EVENT;
-    err = clEnqueueNDRangeKernel(
+    err = OCL(EnqueueNDRangeKernel, 
       handle->commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, MAYBE_EVENTREF
     );
     CHECK_ERR(err);
@@ -1143,7 +1156,7 @@ struct ConvLayer {
   }
 
   ~ConvLayer() {
-    clReleaseMemObject(filter);
+    OCL(ReleaseMemObject, filter);
   }
 
   ConvWorkspaceEltsNeeded requiredConvWorkspaceElts(ComputeHandleInternal* handle, size_t maxBatchSize) const {
@@ -1280,9 +1293,9 @@ struct ConvLayer {
 
     else {
       cl_kernel kernel = handle->conv2dNCHWKernel;
-      clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&input);
-      clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&filter);
-      clSetKernelArg(kernel, 2, sizeof(cl_mem), (const void *)&output);
+      OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&input);
+      OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&filter);
+      OCL(SetKernelArg, kernel, 2, sizeof(cl_mem), (const void *)&output);
 
       //TODO throw this all away and just use winograd entirely
       static const size_t TILE_XSIZE = 32;
@@ -1290,15 +1303,15 @@ struct ConvLayer {
       static const size_t TILE_CHANNELS = 4;
       const size_t inputTileXSize = TILE_XSIZE + 2*convXRadius;
       const size_t inputTileYSize = TILE_YSIZE + 2*convYRadius;
-      clSetKernelArg(kernel, 3, sizeof(float) * TILE_CHANNELS * inputTileXSize * inputTileYSize, NULL);
-      clSetKernelArg(kernel, 4, sizeof(float) * TILE_XSIZE * TILE_YSIZE, NULL);
-      clSetKernelArg(kernel, 5, sizeof(int), (const void *)&batchSize);
-      clSetKernelArg(kernel, 6, sizeof(int), (const void *)&nnXLen);
-      clSetKernelArg(kernel, 7, sizeof(int), (const void *)&nnYLen);
-      clSetKernelArg(kernel, 8, sizeof(int), (const void *)&outChannels);
-      clSetKernelArg(kernel, 9, sizeof(int), (const void *)&inChannels);
-      clSetKernelArg(kernel, 10, sizeof(int), (const void *)&convXRadius);
-      clSetKernelArg(kernel, 11, sizeof(int), (const void *)&convYRadius);
+      OCL(SetKernelArg, kernel, 3, sizeof(float) * TILE_CHANNELS * inputTileXSize * inputTileYSize, NULL);
+      OCL(SetKernelArg, kernel, 4, sizeof(float) * TILE_XSIZE * TILE_YSIZE, NULL);
+      OCL(SetKernelArg, kernel, 5, sizeof(int), (const void *)&batchSize);
+      OCL(SetKernelArg, kernel, 6, sizeof(int), (const void *)&nnXLen);
+      OCL(SetKernelArg, kernel, 7, sizeof(int), (const void *)&nnYLen);
+      OCL(SetKernelArg, kernel, 8, sizeof(int), (const void *)&outChannels);
+      OCL(SetKernelArg, kernel, 9, sizeof(int), (const void *)&inChannels);
+      OCL(SetKernelArg, kernel, 10, sizeof(int), (const void *)&convXRadius);
+      OCL(SetKernelArg, kernel, 11, sizeof(int), (const void *)&convYRadius);
 
       static const int workPerThreadX = 1;
       static const int workPerThreadY = 1;
@@ -1314,7 +1327,7 @@ struct ConvLayer {
 
       cl_int err;
       MAYBE_EVENT;
-      err = clEnqueueNDRangeKernel(
+      err = OCL(EnqueueNDRangeKernel, 
         handle->commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, MAYBE_EVENTREF
       );
       CHECK_ERR(err);
@@ -1469,7 +1482,7 @@ struct MatMulLayer {
 
   ~MatMulLayer() {
     if(inChannels > 0 && outChannels > 0)
-      clReleaseMemObject(matBuf);
+      OCL(ReleaseMemObject, matBuf);
   }
 
   void apply(ComputeHandleInternal* handle, int batchSize, cl_mem input, cl_mem output) const {
@@ -1522,7 +1535,7 @@ struct MatBiasLayer {
 
   ~MatBiasLayer() {
     if(numChannels > 0)
-      clReleaseMemObject(biasBuf);
+      OCL(ReleaseMemObject, biasBuf);
   }
 
   void apply(ComputeHandleInternal* handle, int batchSize, cl_mem input) const {
@@ -1540,17 +1553,17 @@ struct MatBiasLayer {
       Global::fatalError("bad activation");
     }
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&input);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&biasBuf);
-    clSetKernelArg(kernel, 2, sizeof(int), (const void *)&batchSize);
-    clSetKernelArg(kernel, 3, sizeof(int), (const void *)&numChannels);
+    OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&input);
+    OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&biasBuf);
+    OCL(SetKernelArg, kernel, 2, sizeof(int), (const void *)&batchSize);
+    OCL(SetKernelArg, kernel, 3, sizeof(int), (const void *)&numChannels);
 
     cl_int err;
     static constexpr int nKernelDims = 2;
     size_t globalSizes[nKernelDims] = {powerOf2ify((size_t)numChannels), powerOf2ify((size_t)batchSize)};
     size_t* localSizes = NULL;
     MAYBE_EVENT;
-    err = clEnqueueNDRangeKernel(
+    err = OCL(EnqueueNDRangeKernel, 
       handle->commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, MAYBE_EVENTREF
     );
     CHECK_ERR(err);
@@ -1753,7 +1766,7 @@ struct GlobalPoolingResidualBlock {
     addChannelBiases(handle, regularOut.buf, gpoolBias.buf, batchSize * regularChannels, nnXYLen);
 
     // vector<float> tmp(batchSize*regularChannels);
-    // clEnqueueReadBuffer(handle->commandQueue, gpoolBias, CL_TRUE, 0, byteSizeofVectorContents(tmp), tmp.data(), 0, NULL, NULL);
+    // OCL(EnqueueReadBuffer, handle->commandQueue, gpoolBias, CL_TRUE, 0, byteSizeofVectorContents(tmp), tmp.data(), 0, NULL, NULL);
     // cout << "TEST" << endl;
     // for(int i = 0; i<tmp.size(); i++)
     //   cout << tmp[i] << endl;
@@ -2569,18 +2582,18 @@ struct Model {
     {
       cl_kernel kernel = handle->extractChannel0NCHWKernel;
       int nnXYLen = nnXLen * nnYLen;
-      clSetKernelArg(kernel, 0, sizeof(cl_mem), (const void *)&input);
-      clSetKernelArg(kernel, 1, sizeof(cl_mem), (const void *)&mask);
-      clSetKernelArg(kernel, 2, sizeof(int), (const void *)&batchSize);
-      clSetKernelArg(kernel, 3, sizeof(int), (const void *)&numInputChannels);
-      clSetKernelArg(kernel, 4, sizeof(int), (const void *)&nnXYLen);
+      OCL(SetKernelArg, kernel, 0, sizeof(cl_mem), (const void *)&input);
+      OCL(SetKernelArg, kernel, 1, sizeof(cl_mem), (const void *)&mask);
+      OCL(SetKernelArg, kernel, 2, sizeof(int), (const void *)&batchSize);
+      OCL(SetKernelArg, kernel, 3, sizeof(int), (const void *)&numInputChannels);
+      OCL(SetKernelArg, kernel, 4, sizeof(int), (const void *)&nnXYLen);
 
       cl_int err;
       static constexpr int nKernelDims = 2;
       size_t globalSizes[nKernelDims] = {powerOf2ify((size_t)nnXYLen), powerOf2ify((size_t)batchSize)};
       size_t* localSizes = NULL;
       MAYBE_EVENT;
-      err = clEnqueueNDRangeKernel(
+      err = OCL(EnqueueNDRangeKernel, 
         handle->commandQueue, kernel, nKernelDims, NULL, globalSizes, localSizes, 0, NULL, MAYBE_EVENTREF
       );
       CHECK_ERR(err);
@@ -2717,25 +2730,25 @@ struct Buffers {
   }
 
   ~Buffers() {
-    clReleaseMemObject(input);
-    clReleaseMemObject(inputGlobal);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, inputGlobal);
     if(inputMeta != NULL)
-      clReleaseMemObject(inputMeta);
+      OCL(ReleaseMemObject, inputMeta);
 
-    clReleaseMemObject(mask);
-    clReleaseMemObject(maskSum);
+    OCL(ReleaseMemObject, mask);
+    OCL(ReleaseMemObject, maskSum);
 
-    clReleaseMemObject(trunk);
+    OCL(ReleaseMemObject, trunk);
 
-    clReleaseMemObject(policyPass);
-    clReleaseMemObject(policy);
+    OCL(ReleaseMemObject, policyPass);
+    OCL(ReleaseMemObject, policy);
 
-    clReleaseMemObject(value);
-    clReleaseMemObject(scoreValue);
-    clReleaseMemObject(ownership);
+    OCL(ReleaseMemObject, value);
+    OCL(ReleaseMemObject, scoreValue);
+    OCL(ReleaseMemObject, ownership);
 
-    clReleaseMemObject(convWorkspace);
-    clReleaseMemObject(convWorkspace2);
+    OCL(ReleaseMemObject, convWorkspace);
+    OCL(ReleaseMemObject, convWorkspace2);
 
   }
 
@@ -3020,7 +3033,7 @@ void NeuralNet::getOutput(
     for(size_t i = 0; i<numElts; i++)
       inputBuffers->userInputBufferHalf[i] = half_float::half_cast<half_t>(inputBuffers->userInputBuffer[i]);
 
-    err = clEnqueueWriteBuffer(
+    err = OCL(EnqueueWriteBuffer, 
       handle->commandQueue,
       buffers->input,
       CL_FALSE,
@@ -3034,7 +3047,7 @@ void NeuralNet::getOutput(
     CHECK_ERR(err);
   }
   else {
-    err = clEnqueueWriteBuffer(
+    err = OCL(EnqueueWriteBuffer, 
       handle->commandQueue,
       buffers->input,
       CL_FALSE,
@@ -3048,7 +3061,7 @@ void NeuralNet::getOutput(
     CHECK_ERR(err);
   }
 
-  err = clEnqueueWriteBuffer(
+  err = OCL(EnqueueWriteBuffer, 
     handle->commandQueue,
     buffers->inputGlobal,
     CL_FALSE,
@@ -3062,7 +3075,7 @@ void NeuralNet::getOutput(
   CHECK_ERR(err);
 
   if(numMetaFeatures > 0) {
-    err = clEnqueueWriteBuffer(
+    err = OCL(EnqueueWriteBuffer, 
       handle->commandQueue,
       buffers->inputMeta,
       CL_FALSE,
@@ -3102,13 +3115,13 @@ void NeuralNet::getOutput(
   );
 
   cl_bool blocking = CL_TRUE;
-  err = clEnqueueReadBuffer(
+  err = OCL(EnqueueReadBuffer, 
     handle->commandQueue, buffers->policyPass, blocking, 0,
     inputBuffers->singlePolicyPassResultElts*sizeof(float)*batchSize, inputBuffers->policyPassResults, 0, NULL, NULL
   );
   CHECK_ERR(err);
   if(useFP16Storage) {
-    err = clEnqueueReadBuffer(
+    err = OCL(EnqueueReadBuffer, 
       handle->commandQueue, buffers->policy, blocking, 0,
       inputBuffers->singlePolicyResultElts*sizeof(half_t)*batchSize, inputBuffers->policyResultsHalf, 0, NULL, NULL
     );
@@ -3118,24 +3131,24 @@ void NeuralNet::getOutput(
       inputBuffers->policyResults[i] = inputBuffers->policyResultsHalf[i];
   }
   else {
-    err = clEnqueueReadBuffer(
+    err = OCL(EnqueueReadBuffer, 
       handle->commandQueue, buffers->policy, blocking, 0,
       inputBuffers->singlePolicyResultElts*sizeof(float)*batchSize, inputBuffers->policyResults, 0, NULL, NULL
     );
     CHECK_ERR(err);
   }
-  err = clEnqueueReadBuffer(
+  err = OCL(EnqueueReadBuffer, 
     handle->commandQueue, buffers->value, blocking, 0,
     inputBuffers->singleValueResultElts*sizeof(float)*batchSize, inputBuffers->valueResults, 0, NULL, NULL
   );
   CHECK_ERR(err);
-  err = clEnqueueReadBuffer(
+  err = OCL(EnqueueReadBuffer, 
     handle->commandQueue, buffers->scoreValue, blocking, 0,
     inputBuffers->singleScoreValueResultElts*sizeof(float)*batchSize, inputBuffers->scoreValueResults, 0, NULL, NULL
   );
   CHECK_ERR(err);
   if(useFP16Storage) {
-    err = clEnqueueReadBuffer(
+    err = OCL(EnqueueReadBuffer, 
       handle->commandQueue, buffers->ownership, blocking, 0,
       inputBuffers->singleOwnershipResultElts*sizeof(half_t)*batchSize, inputBuffers->ownershipResultsHalf, 0, NULL, NULL
     );
@@ -3145,7 +3158,7 @@ void NeuralNet::getOutput(
       inputBuffers->ownershipResults[i] = inputBuffers->ownershipResultsHalf[i];
   }
   else {
-    err = clEnqueueReadBuffer(
+    err = OCL(EnqueueReadBuffer, 
       handle->commandQueue, buffers->ownership, blocking, 0,
       inputBuffers->singleOwnershipResultElts*sizeof(float)*batchSize, inputBuffers->ownershipResults, 0, NULL, NULL
     );
@@ -3155,13 +3168,13 @@ void NeuralNet::getOutput(
   #ifdef PROFILE_KERNELS
   {
     cl_int profileErr;
-    profileErr = clWaitForEvents(handle->profileEvents.size(), handle->profileEvents.data());
+    profileErr = OCL(WaitForEvents, handle->profileEvents.size(), handle->profileEvents.data());
     CHECK_ERR(profileErr);
     for(int i = 0; i<handle->profileCallbacks.size(); i++) {
       handle->profileCallbacks[i]();
     }
     for(int i = 0; i<handle->profileEvents.size(); i++) {
-      clReleaseEvent(handle->profileEvents[i]);
+      OCL(ReleaseEvent, handle->profileEvents[i]);
     }
     handle->profileEvents.clear();
     handle->profileCallbacks.clear();
@@ -3312,16 +3325,16 @@ bool NeuralNet::testEvaluateConv(
   cl_mem convWorkspace = createReadWriteBuffer(handle, convWorkspaceElts.size1, useFP16);
   cl_mem convWorkspace2 = createReadWriteBuffer(handle, convWorkspaceElts.size2, useFP16);
 
-  cl_mem output = clCreateBuffer(handle->clContext, CL_MEM_READ_WRITE, byteSizeofVectorContents(outputBuffer), NULL, &err);
+  cl_mem output = OCL(CreateBuffer, handle->clContext, CL_MEM_READ_WRITE, byteSizeofVectorContents(outputBuffer), NULL, &err);
   CHECK_ERR(err);
   layer->apply(handle, batchSize, input, output, convWorkspace, convWorkspace2);
 
   blockingReadBuffer(handle->commandQueue, output, numOutputFloats, outputBuffer, useFP16);
 
-  clReleaseMemObject(output);
-  clReleaseMemObject(convWorkspace);
-  clReleaseMemObject(convWorkspace2);
-  clReleaseMemObject(input);
+  OCL(ReleaseMemObject, output);
+  OCL(ReleaseMemObject, convWorkspace);
+  OCL(ReleaseMemObject, convWorkspace2);
+  OCL(ReleaseMemObject, input);
   delete layer;
   delete handle;
   freeComputeContext(context);
@@ -3367,15 +3380,15 @@ bool NeuralNet::testEvaluateBatchNorm(
   cl_mem input = createReadOnlyBuffer(handle,inputTmp,useFP16);
   cl_mem mask = createReadOnlyBuffer(handle,maskTmp,useFP16);
 
-  cl_mem output = clCreateBuffer(handle->clContext, CL_MEM_WRITE_ONLY, byteSizeofVectorContents(outputBuffer), NULL, &err);
+  cl_mem output = OCL(CreateBuffer, handle->clContext, CL_MEM_WRITE_ONLY, byteSizeofVectorContents(outputBuffer), NULL, &err);
   CHECK_ERR(err);
   layer->apply(handle, batchSize, input, output, mask);
 
   blockingReadBuffer(handle->commandQueue, output, numOutputFloats, outputBuffer, useFP16);
 
-  clReleaseMemObject(input);
-  clReleaseMemObject(mask);
-  clReleaseMemObject(output);
+  OCL(ReleaseMemObject, input);
+  OCL(ReleaseMemObject, mask);
+  OCL(ReleaseMemObject, output);
   delete layer;
   delete handle;
   freeComputeContext(context);
@@ -3429,11 +3442,11 @@ bool NeuralNet::testEvaluateResidualBlock(
 
   blockingReadBuffer(handle->commandQueue, trunk, numTrunkFloats, outputBuffer, useFP16);
 
-  clReleaseMemObject(trunk);
-  clReleaseMemObject(mask);
-  clReleaseMemObject(trunkScratch);
-  clReleaseMemObject(convWorkspace);
-  clReleaseMemObject(convWorkspace2);
+  OCL(ReleaseMemObject, trunk);
+  OCL(ReleaseMemObject, mask);
+  OCL(ReleaseMemObject, trunkScratch);
+  OCL(ReleaseMemObject, convWorkspace);
+  OCL(ReleaseMemObject, convWorkspace2);
   delete scratch;
   delete layer;
   delete handle;
@@ -3503,12 +3516,12 @@ bool NeuralNet::testEvaluateGlobalPoolingResidualBlock(
 
   blockingReadBuffer(handle->commandQueue, trunk, numTrunkFloats, outputBuffer, useFP16);
 
-  clReleaseMemObject(trunk);
-  clReleaseMemObject(mask);
-  clReleaseMemObject(maskSum);
-  clReleaseMemObject(trunkScratch);
-  clReleaseMemObject(convWorkspace);
-  clReleaseMemObject(convWorkspace2);
+  OCL(ReleaseMemObject, trunk);
+  OCL(ReleaseMemObject, mask);
+  OCL(ReleaseMemObject, maskSum);
+  OCL(ReleaseMemObject, trunkScratch);
+  OCL(ReleaseMemObject, convWorkspace);
+  OCL(ReleaseMemObject, convWorkspace2);
   delete scratch;
   delete layer;
   delete handle;

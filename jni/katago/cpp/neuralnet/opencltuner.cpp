@@ -808,7 +808,7 @@ struct OpenCLTuneAccums {
       return;
     }
 
-    err = clWaitForEvents(1, &event);
+    err = OCL(WaitForEvents, 1, &event);
     //If the kernel does bad things the error might also pop up here
     if(err != 0) {
       if(!bad) {
@@ -819,13 +819,13 @@ struct OpenCLTuneAccums {
     }
 
     cl_ulong time_start, time_end;
-    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); CHECK_ERR(err);
-    err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); CHECK_ERR(err);
+    err = OCL(GetEventProfilingInfo, event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL); CHECK_ERR(err);
+    err = OCL(GetEventProfilingInfo, event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL); CHECK_ERR(err);
 
     weightedTimeTaken += (time_end - time_start) * 1e-9 * weight;
     weightCounted += weight;
 
-    clReleaseEvent(event);
+    OCL(ReleaseEvent, event);
   }
 
 };
@@ -1084,7 +1084,7 @@ static void tuneXGemmDirect(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "XgemmDirectStridedBatchedNN", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "XgemmDirectStridedBatchedNN", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int maxChannels = modelInfo.maxConvChannels1x1;
@@ -1158,12 +1158,12 @@ static void tuneXGemmDirect(
     if(accums.bad)
       ret.assign(outputNumFloats*numToRecord,0.0);
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(filter);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, filter);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -1295,7 +1295,7 @@ static bool tuneXGemm(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "XgemmBatched", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "XgemmBatched", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int numTilesX = (nnXLen + cfg.conv3x3.OUTTILE_XSIZE - 1) / cfg.conv3x3.OUTTILE_XSIZE;
@@ -1403,12 +1403,12 @@ static bool tuneXGemm(
       ret.resize(inTileXYSize * maxChannels * numTilesTotal);
     }
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(filter);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, filter);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -1537,7 +1537,7 @@ static bool tuneXGemm16(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "XgemmBatched", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "XgemmBatched", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int numTilesX = (nnXLen + cfg.conv3x3.OUTTILE_XSIZE - 1) / cfg.conv3x3.OUTTILE_XSIZE;
@@ -1633,12 +1633,12 @@ static bool tuneXGemm16(
       ret.resize(inTileXYSize * maxChannels * numTilesTotal);
     }
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(filter);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, filter);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -1749,7 +1749,7 @@ static bool tuneHGemmWmma(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "hgemmWmmaBatched", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "hgemmWmmaBatched", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int numTilesX = (nnXLen + cfg.conv3x3.OUTTILE_XSIZE - 1) / cfg.conv3x3.OUTTILE_XSIZE;
@@ -1845,12 +1845,12 @@ static bool tuneHGemmWmma(
       ret.resize(inTileXYSize * maxChannels * numTilesTotal);
     }
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(filter);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, filter);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -1957,7 +1957,7 @@ static bool tuneHGemmWmmaNCHW(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "hgemmWmmaNCHW", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "hgemmWmmaNCHW", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int maxChannels = modelInfo.maxConvChannels1x1;
@@ -2042,12 +2042,12 @@ static bool tuneHGemmWmmaNCHW(
       ret.resize(batchSize * maxChannels * nnXLen*nnYLen);
     }
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(filter);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, filter);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -2133,7 +2133,7 @@ static void tuneTransform(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "transform", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "transform", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int convSize = 3;
@@ -2213,11 +2213,11 @@ static void tuneTransform(
     if(accums.bad)
       ret.assign(outputNumFloats*numToRecord,0.0);
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -2303,7 +2303,7 @@ static void tuneUntransform(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "untransform", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "untransform", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int convSize = 3;
@@ -2383,11 +2383,11 @@ static void tuneUntransform(
     if(accums.bad)
       ret.assign(outputNumFloats*numToRecord,0.0);
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -2482,7 +2482,7 @@ static void tuneGPool(
       program, compileError
     );
     if(!compileSuc) { accums.bad = true; accums.detailedErrorMessage = compileError; accums.badErr = CL_BUILD_PROGRAM_FAILURE; return accums; }
-    cl_kernel kernel = clCreateKernel(program, "gPoolChannelsNCHWMask", &err);
+    cl_kernel kernel = OCL(CreateKernel, program, "gPoolChannelsNCHWMask", &err);
     if(err != 0) { accums.bad = true; accums.badErr = err; return accums; }
 
     int inputNumFloats = batchSize * nnXLen * nnYLen * numChannels;
@@ -2530,13 +2530,13 @@ static void tuneGPool(
     if(accums.bad)
       ret.assign(outputNumFloats*numToRecord,0.0);
 
-    clReleaseMemObject(input);
-    clReleaseMemObject(mask);
-    clReleaseMemObject(maskSum);
-    clReleaseMemObject(output);
+    OCL(ReleaseMemObject, input);
+    OCL(ReleaseMemObject, mask);
+    OCL(ReleaseMemObject, maskSum);
+    OCL(ReleaseMemObject, output);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
+    OCL(ReleaseKernel, kernel);
+    OCL(ReleaseProgram, program);
 
     return accums;
   };
@@ -2624,13 +2624,13 @@ static void dummyThreadLoop(
     return;
   }
 
-  cl_kernel xGemmKernel = clCreateKernel(xGemmProgram, "XgemmDirectStridedBatchedNN", &err);
+  cl_kernel xGemmKernel = OCL(CreateKernel, xGemmProgram, "XgemmDirectStridedBatchedNN", &err);
   if(err != 0) {
     reportFailure("createKernel error code " + Global::intToString(err));
     dummyInitializedOrDeadFlag.setPermanently(true);
     return;
   }
-  cl_kernel addPointWiseKernel = clCreateKernel(addPointWiseProgram, "addPointWise", &err);
+  cl_kernel addPointWiseKernel = OCL(CreateKernel, addPointWiseProgram, "addPointWise", &err);
   if(err != 0) {
     reportFailure("createKernel error code " + Global::intToString(err));
     dummyInitializedOrDeadFlag.setPermanently(true);
@@ -2687,14 +2687,14 @@ static void dummyThreadLoop(
         reportFailure("doStridedBatchedXGemmDirect_KM_KN_NM error code " + Global::intToString(err));
         return;
       }
-      err = clWaitForEvents(1, &event);
+      err = OCL(WaitForEvents, 1, &event);
       //If the kernel does bad things the error might also pop up here
       if(err != 0) {
         reportFailure("doStridedBatchedXGemmDirect_KM_KN_NM error code " + Global::intToString(err));
         return;
       }
 
-      clReleaseEvent(event);
+      OCL(ReleaseEvent, event);
       std::swap(buffer,buffer2);
     }
     else if(which == 4 || which == 5) {
@@ -2707,13 +2707,13 @@ static void dummyThreadLoop(
         reportFailure("doStridedBatchedXGemmDirect_KM_KN_NM error code " + Global::intToString(err));
         return;
       }
-      err = clWaitForEvents(1, &event);
+      err = OCL(WaitForEvents, 1, &event);
       //If the kernel does bad things the error might also pop up here
       if(err != 0) {
         reportFailure("doStridedBatchedXGemmDirect_KM_KN_NM error code " + Global::intToString(err));
         return;
       }
-      clReleaseEvent(event);
+      OCL(ReleaseEvent, event);
     }
     else {
       blockingReadBuffer(commandQueue, buffer, mSize*kSize, output.data());
@@ -2728,17 +2728,17 @@ static void dummyThreadLoop(
     logger->write("Tuning dummy thread numeric total: " + Global::doubleToString(total));
 
 
-  clReleaseMemObject(matrixA);
-  clReleaseMemObject(matrixB);
-  clReleaseMemObject(matrixC);
-  clReleaseMemObject(matrixD);
-  clReleaseMemObject(buffer);
-  clReleaseMemObject(buffer2);
+  OCL(ReleaseMemObject, matrixA);
+  OCL(ReleaseMemObject, matrixB);
+  OCL(ReleaseMemObject, matrixC);
+  OCL(ReleaseMemObject, matrixD);
+  OCL(ReleaseMemObject, buffer);
+  OCL(ReleaseMemObject, buffer2);
 
-  clReleaseKernel(addPointWiseKernel);
-  clReleaseKernel(xGemmKernel);
-  clReleaseProgram(addPointWiseProgram);
-  clReleaseProgram(xGemmProgram);
+  OCL(ReleaseKernel, addPointWiseKernel);
+  OCL(ReleaseKernel, xGemmKernel);
+  OCL(ReleaseProgram, addPointWiseProgram);
+  OCL(ReleaseProgram, xGemmProgram);
 
   return;
 }
