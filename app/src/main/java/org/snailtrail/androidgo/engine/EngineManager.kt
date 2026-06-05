@@ -65,7 +65,7 @@ class EngineManager(private val context: Context) {
                 val modelPath = withContext(Dispatchers.IO) { extractModel() }
                 val configPath = withContext(Dispatchers.IO) { extractConfig() }
                 val visits = maxVisitsForDifficulty(difficulty)
-                val override = "maxVisits=$visits,maxTime=100"
+                val override = "maxVisits=$visits,maxTime=300"
                 type.cliArgs.replace("%MODEL%", modelPath)
                     .replace("%CONFIG%", configPath)
                     .replace("%OVERRIDE%", override)
@@ -90,6 +90,8 @@ class EngineManager(private val context: Context) {
     fun getEngine(): GtpEngine? = engine
 
     fun close() {
+        engine?.interrupt()
+        Thread.sleep(200)  // give engine time to process the interrupt signal
         engine?.close()
         engine = null
         currentType = null

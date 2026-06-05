@@ -24,7 +24,9 @@ fun TitleBar(
     onMenuNewGame: () -> Unit,
     onMenuSave: () -> Unit,
     onMenuHistory: () -> Unit,
-    onMenuAbout: () -> Unit
+    onMenuAbout: () -> Unit,
+    aiThinking: Boolean = false,
+    engineInitializing: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -39,17 +41,30 @@ fun TitleBar(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f).padding(start = 4.dp)
         )
-        IconButton(onClick = onMenuNewGame, modifier = Modifier.size(40.dp)) {
+        val menuEnabled = !aiThinking && !engineInitializing
+        IconButton(
+            onClick = onMenuNewGame,
+            modifier = Modifier.size(40.dp),
+            enabled = menuEnabled
+        ) {
             Icon(painterResource(R.drawable.ic_new_game),
                 contentDescription = stringResource(R.string.menu_new_game),
                 modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuSave, modifier = Modifier.size(40.dp)) {
+        IconButton(
+            onClick = onMenuSave,
+            modifier = Modifier.size(40.dp),
+            enabled = menuEnabled
+        ) {
             Icon(painterResource(R.drawable.ic_save),
                 contentDescription = stringResource(R.string.menu_save),
                 modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuHistory, modifier = Modifier.size(40.dp)) {
+        IconButton(
+            onClick = onMenuHistory,
+            modifier = Modifier.size(40.dp),
+            enabled = menuEnabled
+        ) {
             Icon(painterResource(R.drawable.ic_history),
                 contentDescription = stringResource(R.string.menu_history),
                 modifier = Modifier.size(24.dp))

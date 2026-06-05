@@ -243,8 +243,8 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
         if (ch < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 if (nonBlocking) break;
-                if (++interruptStrikes > 24000) {
-                    GTP_LOG("readResponse timeout after 120s");
+                if (++interruptStrikes > 64000) {
+                    GTP_LOG("readResponse timeout after 320s");
                     out = "";
                     if (callbacks.onWaiting) callbacks.onWaiting(false);
                     return false;

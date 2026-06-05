@@ -206,7 +206,9 @@ class MainActivity : ComponentActivity() {
                             onMenuNewGame = { showNewGameDialog = true },
                             onMenuSave = { saveSgf() },
                             onMenuHistory = { currentPage = Page.History },
-                            onMenuAbout = { showAboutDialog = true }
+                            onMenuAbout = { showAboutDialog = true },
+                            aiThinking = aiThinking,
+                            engineInitializing = engineInitializing
                         )
                         // ── Game info bar ──
                         GameInfoBar(
