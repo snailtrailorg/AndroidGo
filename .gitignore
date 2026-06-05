@@ -12,3 +12,4 @@
 *.jks
 *.keystore
 app/debug.keystore
+jni/katago/models/*/*.txt.gz

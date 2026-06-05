@@ -10,9 +10,23 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--export-dynamic -Wl,--allow-shlib-undefined -Wl,--unresolved-symbols=ignore-in-shared-libs"
 
-.PHONY: all katago-cpu katago-gpu gnugo clean verify
+.PHONY: all katago-cpu katago-gpu gnugo model clean verify
+
+MODEL ?= $(shell grep '^MODEL' $(CURDIR)/model.conf 2>/dev/null | cut -d= -f2 | xargs)
+MODEL_DIR = $(CURDIR)/models/$(MODEL)
+ASSETS_DIR = $(CURDIR)/../../app/src/main/assets/engine
 
 all: katago-cpu katago-gpu
+
+model:
+	@echo "=== Model: $(MODEL) ==="
+	@test -d $(MODEL_DIR) || { echo "ERROR: model dir not found: $(MODEL_DIR)"; exit 1; }
+	@cp $(MODEL_DIR)/*.txt.gz $(ASSETS_DIR)/katago_model.txt.gz
+	@ls -lh $(ASSETS_DIR)/katago_model.txt.gz
+	@echo "Model $(MODEL) → katago_model.txt.gz OK"
+
+verify-model:
+	@zcat $(ASSETS_DIR)/katago_model.txt.gz 2>/dev/null | head -1 || echo "NOT FOUND"
 
 gnugo:
 	@echo "=== GNU Go ==="
