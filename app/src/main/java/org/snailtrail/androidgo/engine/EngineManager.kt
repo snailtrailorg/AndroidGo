@@ -30,20 +30,10 @@ class EngineManager(private val context: Context) {
         context.applicationInfo.nativeLibraryDir
     }
 
-    /** Map difficulty 1-10 to KataGo maxVisits. Level 1 = 500 visits (still competent endgame). */
-    private fun maxVisitsForDifficulty(level: Int): Int = when (level.coerceIn(1, 10)) {
-        1 -> 500
-        2 -> 650
-        3 -> 800
-        4 -> 1000
-        5 -> 1500
-        6 -> 2000
-        7 -> 2800
-        8 -> 3500
-        9 -> 4200
-        10 -> 5000
-        else -> 500
-    }
+    val modelName: String get() = MODEL_NAME
+
+    private fun maxVisitsForDifficulty(level: Int): Int =
+        VISIT_LEVELS.getOrElse(level.coerceIn(1, 10) - 1) { 500 }
 
     suspend fun ensureEngine(type: EngineType = EngineType.GnuGo, difficulty: Int = 5, backend: ComputeBackend = ComputeBackend.CPU): GtpEngine = mutex.withLock {
         if (type == currentType && engine?.isRunning() == true) {

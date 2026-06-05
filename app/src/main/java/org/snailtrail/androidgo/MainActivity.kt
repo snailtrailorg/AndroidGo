@@ -450,7 +450,8 @@ class MainActivity : ComponentActivity() {
         }
 
         if (showAboutDialog) {
-            AboutDialog(onDismiss = { showAboutDialog = false })
+            AboutDialog(onDismiss = { showAboutDialog = false },
+                modelName = engineManager.modelName)
         }
     }
 

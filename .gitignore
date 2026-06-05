@@ -13,3 +13,4 @@
 *.keystore
 app/debug.keystore
 jni/katago/models/*/*.txt.gz
+app/src/main/java/org/snailtrail/androidgo/engine/ModelConfig.kt

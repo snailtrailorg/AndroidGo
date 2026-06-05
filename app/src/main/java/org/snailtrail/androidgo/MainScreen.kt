@@ -123,7 +123,7 @@ fun fmtScore(f: Float): String {
 // ── About dialog ──
 
 @Composable
-fun AboutDialog(onDismiss: () -> Unit) {
+fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.about_title)) },
@@ -132,6 +132,9 @@ fun AboutDialog(onDismiss: () -> Unit) {
                 Text(stringResource(R.string.about_version), fontSize = 13.sp)
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
                 Text(stringResource(R.string.about_engines), fontSize = 13.sp)
+                if (modelName.isNotEmpty()) {
+                    Text(stringResource(R.string.about_model, modelName), fontSize = 13.sp)
+                }
                 Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
                 Text(stringResource(R.string.about_github), fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary)

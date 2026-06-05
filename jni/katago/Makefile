@@ -15,6 +15,7 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake
 MODEL ?= $(shell grep '^MODEL' $(CURDIR)/model.conf 2>/dev/null | cut -d= -f2 | xargs)
 MODEL_DIR = $(CURDIR)/models/$(MODEL)
 ASSETS_DIR = $(CURDIR)/../../app/src/main/assets/engine
+MODEL_CONFIG_KT = $(CURDIR)/../../app/src/main/java/org/snailtrail/androidgo/engine/ModelConfig.kt
 
 all: katago-cpu katago-gpu
 
@@ -22,8 +23,12 @@ model:
 	@echo "=== Model: $(MODEL) ==="
 	@test -d $(MODEL_DIR) || { echo "ERROR: model dir not found: $(MODEL_DIR)"; exit 1; }
 	@cp $(MODEL_DIR)/*.txt.gz $(ASSETS_DIR)/katago_model.txt.gz
+	@echo "package org.snailtrail.androidgo.engine" > $(MODEL_CONFIG_KT)
+	@echo "const val MODEL_NAME = \"$(MODEL)\"" >> $(MODEL_CONFIG_KT)
+	@echo "val VISIT_LEVELS = intArrayOf($$(head -1 $(MODEL_DIR)/params.conf))" >> $(MODEL_CONFIG_KT)
 	@ls -lh $(ASSETS_DIR)/katago_model.txt.gz
-	@echo "Model $(MODEL) → katago_model.txt.gz OK"
+	@echo "Model $(MODEL) → katago_model.txt.gz + ModelConfig.kt OK"
+	@cat $(MODEL_CONFIG_KT)
 
 verify-model:
 	@zcat $(ASSETS_DIR)/katago_model.txt.gz 2>/dev/null | head -1 || echo "NOT FOUND"
