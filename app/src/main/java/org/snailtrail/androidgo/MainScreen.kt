@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -32,12 +33,12 @@ fun BottomBar(
     aiThinking: Boolean,
     engineInitializing: Boolean = false,
     hasMoves: Boolean,
-    canRedo: Boolean = false,
+    showMoveNumbers: Boolean = false,
     showScore: Boolean = false,
     scoringInFlight: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
-    onRedo: () -> Unit,
+    onToggleMoveNumbers: () -> Unit,
     onScore: () -> Unit,
     onEnd: () -> Unit
 ) {
@@ -58,10 +59,13 @@ fun BottomBar(
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onRedo, enabled = canRedo && !gameOver && !aiThinking && !engineInitializing && !showScore,
+            onClick = onToggleMoveNumbers, enabled = hasMoves && !gameOver && !aiThinking && !engineInitializing && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-        ) { Text(stringResource(R.string.btn_redo), fontSize = 12.sp, maxLines = 1) }
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            colors = if (showMoveNumbers) ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ) else ButtonDefaults.buttonColors()
+        ) { Text(stringResource(R.string.btn_move_numbers), fontSize = 12.sp, maxLines = 1) }
         Button(
             onClick = onScore, enabled = hasMoves && !aiThinking && !engineInitializing && !scoringInFlight,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),

@@ -71,7 +71,6 @@ fun GameInfoBar(
         Text(
             text = when {
                 gameOver -> stringResource(R.string.game_over)
-                aiThinking -> stringResource(R.string.ai_thinking)
                 else -> stringResource(R.string.move_count, moveCount)
             },
             fontSize = 12.sp,

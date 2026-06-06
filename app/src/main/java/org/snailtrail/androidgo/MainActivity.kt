@@ -158,6 +158,7 @@ class MainActivity : ComponentActivity() {
         var showNewGameDialog by remember { mutableStateOf(false) }
         var showAboutDialog by remember { mutableStateOf(false) }
         var showScore by remember { mutableStateOf(false) }
+        var showMoveNumbers by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
         var scoringInFlight by remember { mutableStateOf(false) }
 
@@ -244,7 +245,8 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-                                territoryMap = if (showScore) currentScore?.territoryMap ?: emptyMap() else emptyMap()
+                                territoryMap = if (showScore) currentScore?.territoryMap ?: emptyMap() else emptyMap(),
+                                showMoveNumbers = showMoveNumbers
                             )
 
                             // ── Engine initializing overlay ──
@@ -267,6 +269,24 @@ class MainActivity : ComponentActivity() {
                                         color = Color.White,
                                         fontSize = 14.sp,
                                         modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                            }
+
+                            // ── AI thinking overlay ──
+                            if (aiThinking) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(1f)
+                                        .background(Color.Black.copy(alpha = 0.15f))
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(28.dp),
+                                        strokeWidth = 2.5.dp,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -293,7 +313,7 @@ class MainActivity : ComponentActivity() {
                             aiThinking = aiThinking,
                             engineInitializing = engineInitializing,
                             hasMoves = boardState.moveHistory.isNotEmpty(),
-                            canRedo = boardState.redoStack.isNotEmpty(),
+                            showMoveNumbers = showMoveNumbers,
                             showScore = showScore,
                             scoringInFlight = scoringInFlight,
                             onPass = {
@@ -327,9 +347,8 @@ class MainActivity : ComponentActivity() {
                                     goGame.undo()
                                 }
                             },
-                            onRedo = {
-                                showScore = false
-                                goGame.redo()
+                            onToggleMoveNumbers = {
+                                showMoveNumbers = !showMoveNumbers
                             },
                             onScore = {
                                 if (showScore) {
@@ -423,7 +442,7 @@ class MainActivity : ComponentActivity() {
                     blackName = blackConfig.name,
                     whiteName = whiteConfig.name,
                     onIndexChange = { reviewIndex = it },
-                    onBack = { currentPage = Page.Game },
+                    onBack = { currentPage = Page.History },
                     onLoad = {
                         val parsed = org.snailtrail.androidgo.game.ParsedSgf(
                             boardSize = reviewSize,

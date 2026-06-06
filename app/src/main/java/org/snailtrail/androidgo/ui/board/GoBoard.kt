@@ -14,6 +14,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -64,9 +69,11 @@ fun GoBoardScreen(
     boardState: BoardState,
     onCellClick: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
-    territoryMap: Map<Pair<Int, Int>, StoneColor> = emptyMap()
+    territoryMap: Map<Pair<Int, Int>, StoneColor> = emptyMap(),
+    showMoveNumbers: Boolean = false
 ) {
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
 
     BoxWithConstraints(
         modifier = modifier
@@ -147,6 +154,33 @@ fun GoBoardScreen(
                     offsetY + row * cellSize,
                     stoneRadius, color
                 )
+            }
+
+            // Move numbers overlay (inside stones)
+            if (showMoveNumbers && boardState.moveHistory.isNotEmpty()) {
+                // Build position → move number from moveHistory
+                val moveNumbers = mutableMapOf<Pair<Int, Int>, Int>()
+                boardState.moveHistory.forEachIndexed { idx, move ->
+                    if (!move.isPass) {
+                        moveNumbers[move.stone.row to move.stone.col] = idx + 1
+                    }
+                }
+                val style = TextStyle(
+                    fontSize = with(density) { (stoneRadius * 0.9f / density.density).toSp() },
+                    fontWeight = FontWeight.Bold
+                )
+                moveNumbers.forEach { (pos, num) ->
+                    val text = num.toString()
+                    val (row, col) = pos
+                    val cx = offsetX + col * cellSize
+                    val cy = offsetY + row * cellSize
+                    val result = textMeasurer.measure(text, style)
+                    drawText(
+                        textMeasurer, text,
+                        topLeft = Offset(cx - result.size.width / 2f, cy - result.size.height / 2f),
+                        style = style
+                    )
+                }
             }
 
             // Territory markers (on top of stones so dead stones get visible overlay)
