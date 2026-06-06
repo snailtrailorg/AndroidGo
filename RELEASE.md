@@ -21,14 +21,19 @@ v<主版本>.<次版本>.<修订>
 ## [Unreleased]
 
 ### 新增
-- 引擎关闭前先发送 GTP interrupt 信号（`\n`），中断正在进行的 genmove 搜索，避免 `pthread_join` 长时间阻塞 IO 协程
+- 模型选择系统: `make model` 一键切换 b10c128 / b15c192 / b20c256
+- `model.conf` + `params.conf` 绑定模型与难度参数，Makefile 生成编译时常量 `ModelConfig.kt`
+- About 对话框显示当前 KataGo 模型名称
+- 引擎关闭前先发送 GTP interrupt 信号（`\n`），中断正在进行的 genmove 搜索
 
 ### 修复
-- 引擎初始化期间禁用 TitleBar 新局/保存/历史按钮，防止用户操作触发竞态导致卡死在"引擎启动中…"
+- 引擎初始化期间禁用 TitleBar 新局/保存/历史按钮（仅保留关于），防止用户操作触发竞态
+- TitleBar 新增 `engineInitializing` 状态控制，底部按钮同步禁用
 
 ### 优化
 - `maxTime` 从 100s 增加到 300s，给高难度 KataGo 搜索更充裕的时间
-- GTP readResponse 超时从 120s 增加到 320s，与引擎时间匹配
+- GTP readResponse 超时从 120s 增加到 320s
+- 难度参数随模型自动调整（b15: 200-2400, b20: 150-1800）
 
 ---
 
