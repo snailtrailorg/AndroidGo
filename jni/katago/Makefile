@@ -87,8 +87,8 @@ verify-model:
 
 # If cmake files change, invalidate cache so it reconfigures.
 KATAGO_CMAKE   := $(CURDIR)/CMakeLists.txt $(CURDIR)/katago_bridge.cpp
-OPENCL_DISPATCH := $(CURDIR)/../opencl/dispatch/opencl_dispatch.cpp \
-                   $(CURDIR)/../opencl/dispatch/opencl_dispatch.h
+OPENCL_DISPATCH := $(CURDIR)/opencl/dispatch/opencl_dispatch.cpp \
+                   $(CURDIR)/opencl/dispatch/opencl_dispatch.h
 
 # ── Engines ────────────────────────────────────────────────────────────
 
