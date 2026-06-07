@@ -22,9 +22,10 @@ MAIN    := $(APPID)/.MainActivity
 ENGINE_SOS := $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libgnugo.so \
               $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_cpu.so \
               $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_gpu.so
+MODEL_FILE := $(CURDIR)/app/src/main/assets/engine/katago_model.txt.gz
 
 .PHONY: all engines menuconfig model gnugo katago-cpu katago-gpu \
-        clean verify apk install run guard-engines
+        clean verify apk install run guard-assets
 
 # ── Top-level targets ─────────────────────────────────────────────
 
@@ -41,18 +42,18 @@ menuconfig:
 model:
 	@$(MAKE) -C jni/katago model
 
-apk: guard-engines
+apk: guard-assets
 	@$(GRADLEW) assembleDebug
 
-guard-engines:
+guard-assets:
 	@missing=""; \
-	for so in $(ENGINE_SOS); do \
-	    [ -f $$so ] || missing="$$missing  $$so\n"; \
+	for f in $(ENGINE_SOS) $(MODEL_FILE); do \
+	    [ -f $$f ] || missing="$$missing  $$f\n"; \
 	done; \
 	if [ -n "$$missing" ]; then \
-	    echo "ERROR: Engine .so not found:"; \
+	    echo "ERROR: Required files not found:"; \
 	    printf "$$missing"; \
-	    echo "Run 'make engines' first."; \
+	    echo "Run 'make engines' first (model auto-deploys if missing)."; \
 	    exit 1; \
 	fi
 
