@@ -10,9 +10,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AndroidGo"
-        android:extractNativeLibs="true"
-        tools:replace="android:extractNativeLibs">
+        android:theme="@style/Theme.AndroidGo">
 
         <activity
             android:name=".MainActivity"

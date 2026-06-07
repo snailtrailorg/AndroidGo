@@ -299,8 +299,9 @@ class MainActivity : ComponentActivity() {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             }
                         } else if (showScore && currentScore != null) {
+                            val score = currentScore!!
                             ScoreCard(
-                                score = currentScore!!,
+                                score = score,
                                 blackName = blackConfig.name,
                                 whiteName = whiteConfig.name,
                                 endGame = boardState.gameOver
@@ -686,7 +687,7 @@ class MainActivity : ComponentActivity() {
         val tempMgr = EngineManager(applicationContext)
         return try {
             tempMgr.ensureEngine(EngineType.KataGoCPU, 5, ComputeBackend.CPU)
-            val e = tempMgr.getEngine()!!
+            val e = tempMgr.getEngine() ?: throw IllegalStateException("KataGo engine not started")
             e.init(state.size, state.komi)
             for ((pos, color) in state.stones) {
                 e.playMove(pos.first, pos.second, color == StoneColor.Black)

@@ -29,5 +29,5 @@ SET_SOURCE_FILES_PROPERTIES(main.c PROPERTIES
 TARGET_LINK_LIBRARIES(gnugo sgf engine sgf utils patterns m)
 
 SET_TARGET_PROPERTIES(gnugo PROPERTIES
-    LINK_FLAGS "-Wl,--export-dynamic -Wl,-soname,libgnugo.so -Wl,-z,max-page-size=16384 -Wl,-z,muldefs"
+    LINK_FLAGS "-Wl,--export-dynamic -Wl,-soname,libgnugo.so -Wl,-z,max-page-size=16384 -Wl,-z,muldefs -Wl,--wrap=exit -Wl,--wrap=abort"
 )

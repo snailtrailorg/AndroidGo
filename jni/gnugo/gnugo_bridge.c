@@ -5,14 +5,16 @@
 #include <pthread.h>
 extern int gnugo_main(int argc, char *argv[]);
 
-/* Redirect exit()/abort() to thread exit. Calling these in a dlopen'd
-   shared library would kill the entire Android process including the UI. */
-void gnugo_exit(int status) {
+/* Intercept exit()/abort() via -Wl,--wrap=exit -Wl,--wrap=abort.
+   Without this, any call to exit() or abort() from within GNU Go
+   would kill the entire Android app process instead of just the
+   engine thread. */
+void __wrap_exit(int status) {
     fflush(stdout);
     fflush(stderr);
     pthread_exit(NULL);
 }
-void gnugo_abort(void) {
+void __wrap_abort(void) {
     fflush(stdout);
     fflush(stderr);
     pthread_exit(NULL);
