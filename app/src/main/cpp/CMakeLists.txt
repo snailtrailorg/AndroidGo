@@ -14,3 +14,4 @@ target_include_directories(gtp_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 find_library(log-lib log)
 
 target_link_libraries(gtp_client ${log-lib})
+target_link_options(gtp_client PRIVATE -Wl,-z,max-page-size=16384)

@@ -1515,7 +1515,7 @@ are_neighbors(int pos1, int pos2)
 int
 countlib(int str)
 {
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
   
   /* We already know the number of liberties. Just look it up. */
   return string[string_number[str]].liberties;
@@ -1538,7 +1538,7 @@ findlib(int str, int maxlib, int *libs)
   int liberties;
   int s;
   
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
   ASSERT1(libs != NULL, str);
   
   /* We already have the list of liberties and only need to copy it to
@@ -2518,7 +2518,7 @@ int
 countstones(int str)
 {
   ASSERT_ON_BOARD1(str);
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   return COUNTSTONES(str);
 }
@@ -2538,7 +2538,7 @@ findstones(int str, int maxstones, int *stones)
   int k;
   
   ASSERT_ON_BOARD1(str);
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   s = string_number[str];
   size = string[s].size;
@@ -2600,7 +2600,7 @@ chainlinks(int str, int adj[MAXCHAIN])
   struct string_neighbors_data *sn;
   int k;
 
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   /* We already have the list ready, just copy it and fill in the
    * desired information.
@@ -2627,7 +2627,7 @@ chainlinks2(int str, int adj[MAXCHAIN], int lib)
   int k;
   int neighbors;
 
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   /* We already have the list ready, just copy the strings with the
    * right number of liberties.
@@ -2657,7 +2657,7 @@ chainlinks3(int str, int adj[MAXCHAIN], int lib)
   int k;
   int neighbors;
 
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   /* We already have the list ready, just copy the strings with the
    * right number of liberties.
@@ -2693,7 +2693,7 @@ extended_chainlinks(int str, int adj[MAXCHAIN], int both_colors)
   int libs[MAXLIBS];
   int liberties;
 
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   /* We already have the list of directly adjacent strings ready, just
    * copy it and mark the strings.
@@ -2796,7 +2796,7 @@ send_two_return_one(int move, int color)
 int
 find_origin(int str)
 {
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   return string[string_number[str]].origin;
 }
@@ -3191,7 +3191,7 @@ mark_string(int str, signed char mx[BOARDMAX], signed char mark)
 {
   int pos = str;
 
-  ASSERT1(IS_STONE(board[str]), str);
+  if (!IS_STONE(board[str])) return 0;
 
   do {
     mx[pos] = mark;

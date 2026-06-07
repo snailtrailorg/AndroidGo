@@ -11,6 +11,7 @@
 | JDK | 17 | Gradle runtime |
 | Make | any | Top-level build orchestration |
 | filesystem | ~5 GB free | Build artifacts + source checkout |
+| host OS | Linux x86_64 | Makefile llvm-strip path and nproc are Linux-specific |
 
 ## Build Overview
 

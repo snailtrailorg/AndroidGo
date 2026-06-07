@@ -25,15 +25,15 @@ else()
 endif()
 
 # ── Sources — GLOB each directory once ──
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_CORE       "${KATAGO_SRC}/core/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_GAME       "${KATAGO_SRC}/game/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_SEARCH     "${KATAGO_SRC}/search/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_DATAIO     "${KATAGO_SRC}/dataio/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_BOOK       "${KATAGO_SRC}/book/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_PROGRAM    "${KATAGO_SRC}/program/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_COMMAND    "${KATAGO_SRC}/command/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_TESTS      "${KATAGO_SRC}/tests/*.cpp")
-file(GLOB_RECURSE CONFIGURE_DEPENDS SRC_NEURALNET  "${KATAGO_SRC}/neuralnet/*.cpp")
+file(GLOB_RECURSE SRC_CORE       CONFIGURE_DEPENDS "${KATAGO_SRC}/core/*.cpp")
+file(GLOB_RECURSE SRC_GAME       CONFIGURE_DEPENDS "${KATAGO_SRC}/game/*.cpp")
+file(GLOB_RECURSE SRC_SEARCH     CONFIGURE_DEPENDS "${KATAGO_SRC}/search/*.cpp")
+file(GLOB_RECURSE SRC_DATAIO     CONFIGURE_DEPENDS "${KATAGO_SRC}/dataio/*.cpp")
+file(GLOB_RECURSE SRC_BOOK       CONFIGURE_DEPENDS "${KATAGO_SRC}/book/*.cpp")
+file(GLOB_RECURSE SRC_PROGRAM    CONFIGURE_DEPENDS "${KATAGO_SRC}/program/*.cpp")
+file(GLOB_RECURSE SRC_COMMAND    CONFIGURE_DEPENDS "${KATAGO_SRC}/command/*.cpp")
+file(GLOB_RECURSE SRC_TESTS      CONFIGURE_DEPENDS "${KATAGO_SRC}/tests/*.cpp")
+file(GLOB_RECURSE SRC_NEURALNET  CONFIGURE_DEPENDS "${KATAGO_SRC}/neuralnet/*.cpp")
 file(GLOB         SRC_MAIN       "${KATAGO_SRC}/main.cpp")
 
 # Exclude non-OpenCL backends and test files
@@ -96,6 +96,7 @@ target_link_libraries(katago_engine PRIVATE dl log z m)
 target_link_options(katago_engine PRIVATE
     -Wl,--export-dynamic
     -Wl,-soname,lib${KATAGO_OUTPUT_NAME}.so
+    -Wl,-z,max-page-size=16384
 )
 # OpenCL symbols are resolved at runtime via dispatch → need relaxed linking
 if(KATAGO_BACKEND STREQUAL "OPENCL")

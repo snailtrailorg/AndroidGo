@@ -50,7 +50,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #else
-#define GRID_OPT 0
+/* #define GRID_OPT 0 -- now controlled by config.h */
 #endif
 
 #ifndef GRID_OPT
