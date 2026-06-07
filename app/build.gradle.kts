@@ -22,7 +22,8 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
+        buildConfigField("String", "GIT_REVISION", "\"${try { providers.exec { commandLine("git", "rev-parse", "--short", "HEAD"); workingDir = projectDir }.standardOutput.asText.get().trim() } catch (_: Exception) { "unknown" }}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -50,6 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     externalNativeBuild {

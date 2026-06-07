@@ -36,10 +36,10 @@
 
     <!-- About Dialog -->
     <string name="about_title">关于 安卓围棋</string>
-    <string name="about_version">版本 1.0</string>
-    <string name="about_desc">Android 围棋应用 · Jetpack Compose</string>
-    <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
-    <string name="about_model">模型: %1$s</string>
+    <string name="about_version">版本 %1$s build %2$s</string>
+    <string name="about_desc">安卓围棋应用</string>
+    <string name="about_gnugo">GNU Go 3.8</string>
+    <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">由 snailtrail.org 提供</string>
     <string name="about_github">github.com/snailtrailorg/AndroidGo</string>
     <string name="about_close">关闭</string>

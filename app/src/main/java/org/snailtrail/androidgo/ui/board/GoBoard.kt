@@ -165,12 +165,18 @@ fun GoBoardScreen(
                         moveNumbers[move.stone.row to move.stone.col] = idx + 1
                     }
                 }
-                val style = TextStyle(
-                    fontSize = with(density) { (stoneRadius * 0.9f / density.density).toSp() },
-                    fontWeight = FontWeight.Bold
-                )
                 moveNumbers.forEach { (pos, num) ->
                     val text = num.toString()
+                    val stoneColor = boardState.stones[pos]
+                    val textColor = when (stoneColor) {
+                        StoneColor.Black -> Color.White
+                        else -> Color.Black
+                    }
+                    val style = TextStyle(
+                        fontSize = (cellSize * 0.50f).toSp(),
+                        letterSpacing = (-0.15f).sp,
+                        color = textColor
+                    )
                     val (row, col) = pos
                     val cx = offsetX + col * cellSize
                     val cy = offsetY + row * cellSize

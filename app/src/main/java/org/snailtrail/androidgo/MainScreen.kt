@@ -128,16 +128,20 @@ fun fmtScore(f: Float): String {
 
 @Composable
 fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
+    val version = BuildConfig.VERSION_NAME
+    val revision = BuildConfig.GIT_REVISION
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.about_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.about_version), fontSize = 13.sp)
+                Text(stringResource(R.string.about_version, version, revision), fontSize = 13.sp)
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
-                Text(stringResource(R.string.about_engines), fontSize = 13.sp)
+                Text(stringResource(R.string.about_gnugo), fontSize = 13.sp)
                 if (modelName.isNotEmpty()) {
-                    Text(stringResource(R.string.about_model, modelName), fontSize = 13.sp)
+                    Text(stringResource(R.string.about_katago, modelName), fontSize = 13.sp)
+                } else {
+                    Text("KataGo 1.16.5", fontSize = 13.sp)
                 }
                 Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
                 Text(stringResource(R.string.about_github), fontSize = 12.sp,

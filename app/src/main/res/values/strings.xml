@@ -36,10 +36,10 @@
 
     <!-- About Dialog -->
     <string name="about_title">About AndroidGo</string>
-    <string name="about_version">Version 1.0</string>
-    <string name="about_desc">Android Go app powered by Jetpack Compose</string>
-    <string name="about_engines">GNU Go 3.8 · KataGo v1.16.5</string>
-    <string name="about_model">Model: %1$s</string>
+    <string name="about_version">Version %1$s build %2$s</string>
+    <string name="about_desc">Android Go Application</string>
+    <string name="about_gnugo">GNU Go 3.8</string>
+    <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">Powered by snailtrail.org</string>
     <string name="about_github">github.com/snailtrailorg/AndroidGo</string>
     <string name="about_close">Close</string>
