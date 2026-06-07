@@ -11,7 +11,7 @@
 
     <!-- Game Info Bar -->
     <string name="game_over">终局</string>
-    <string name="ai_thinking">思考中…</string>
+    <string name="ai_thinking">AI思考中…</string>
     <string name="info_player">%1$s</string>
     <string name="info_player_ai">%1$s (AI)</string>
     <string name="move_count">第%1$d手</string>

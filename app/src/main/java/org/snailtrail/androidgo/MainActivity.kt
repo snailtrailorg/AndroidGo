@@ -288,6 +288,12 @@ class MainActivity : ComponentActivity() {
                                         strokeWidth = 2.5.dp,
                                         color = MaterialTheme.colorScheme.primary
                                     )
+                                    Text(
+                                        stringResource(R.string.ai_thinking),
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
                                 }
                             }
                         }
