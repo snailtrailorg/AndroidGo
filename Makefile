@@ -19,13 +19,13 @@ APK     := $(CURDIR)/app/build/outputs/apk/debug/app-debug.apk
 APPID   := org.snailtrail.androidgo
 MAIN    := $(APPID)/.MainActivity
 
-ENGINE_SOS := $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libgnugo.so \
-              $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_cpu.so \
-              $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_gpu.so
+JNILIBS  := $(CURDIR)/app/src/main/jniLibs/arm64-v8a
+ENGINE_SOS := $(JNILIBS)/libgnugo.so $(JNILIBS)/libkatago_cpu.so $(JNILIBS)/libkatago_gpu.so
+CXX_SO     := $(JNILIBS)/libc++_shared.so
 MODEL_FILE := $(CURDIR)/app/src/main/assets/engine/katago_model.txt.gz
 
 .PHONY: all engines menuconfig model gnugo katago-cpu katago-gpu \
-        clean verify apk install run guard-assets
+        clean verify test apk install run guard-assets
 
 # ── Top-level targets ─────────────────────────────────────────────
 
@@ -35,6 +35,16 @@ engines:
 	@$(MAKE) -C jni/katago model-ready
 	@$(MAKE) -C jni/gnugo
 	@$(MAKE) -C jni/katago katago-cpu katago-gpu
+	@$(MAKE) runtime-libs
+
+# Copy NDK C++ runtime (not committed — fetched on first build).
+# arm64-v8a only, matches abiFilters in build.gradle.kts.
+runtime-libs: $(CXX_SO)
+
+$(CXX_SO):
+	@mkdir -p $(JNILIBS)
+	@cp $(NDK)/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so $@
+	@echo "  libc++_shared.so → jniLibs"
 
 menuconfig:
 	@$(MAKE) -C jni/katago menuconfig
@@ -47,13 +57,13 @@ apk: guard-assets
 
 guard-assets:
 	@missing=""; \
-	for f in $(ENGINE_SOS) $(MODEL_FILE); do \
+	for f in $(ENGINE_SOS) $(CXX_SO) $(MODEL_FILE); do \
 	    [ -f $$f ] || missing="$$missing  $$f\n"; \
 	done; \
 	if [ -n "$$missing" ]; then \
 	    echo "ERROR: Required files not found:"; \
 	    printf "$$missing"; \
-	    echo "Run 'make engines' first (model auto-deploys if missing)."; \
+	    echo "Run 'make engines' first (model + libc++ auto-deploy if missing)."; \
 	    exit 1; \
 	fi
 
@@ -65,6 +75,11 @@ run:
 	    echo "ERROR: $(APPID) not installed. Run 'make install' first."; exit 1; \
 	fi
 	adb shell am start -n $(MAIN)
+
+test:
+	@$(GRADLEW) test
+
+# ── Individual engines ────────────────────────────────────────────
 
 # ── Individual engines ────────────────────────────────────────────
 
@@ -79,6 +94,7 @@ katago-cpu katago-gpu:
 clean:
 	@$(MAKE) -C jni/gnugo clean
 	@$(MAKE) -C jni/katago clean
+	@rm -f $(CXX_SO)
 	@$(GRADLEW) clean 2>&1 | tail -1
 
 verify:

@@ -85,12 +85,21 @@ menuconfig:
 verify-model:
 	@zcat $(ASSETS_DIR)/katago_model.txt.gz 2>/dev/null | head -1 || echo "NOT FOUND"
 
+# If cmake files change, invalidate cache so it reconfigures.
+KATAGO_CMAKE   := $(CURDIR)/CMakeLists.txt $(CURDIR)/katago_bridge.cpp
+OPENCL_DISPATCH := $(CURDIR)/../opencl/dispatch/opencl_dispatch.cpp \
+                   $(CURDIR)/../opencl/dispatch/opencl_dispatch.h
+
 # ── Engines ────────────────────────────────────────────────────────────
 
 katago-cpu: $(OUTDIR)/libkatago_cpu.so
 katago-gpu: $(OUTDIR)/libkatago_gpu.so
 
-$(OUTDIR)/libkatago_cpu.so:
+$(OUTDIR)/libkatago_cpu.so: $(KATAGO_CMAKE)
+	@if [ -f $(CPU_BUILD)/CMakeCache.txt ]; then \
+	    newer=$$(find $(KATAGO_CMAKE) -newer $(CPU_BUILD)/CMakeCache.txt 2>/dev/null); \
+	    [ -n "$$newer" ] && { echo "  cmake files changed, reconfiguring..."; rm -rf $(CPU_BUILD); }; \
+	fi
 	@echo "=== KataGo CPU (Eigen) ==="
 	@mkdir -p $(CPU_BUILD)
 	@test -f $(CPU_BUILD)/CMakeCache.txt || \
@@ -100,7 +109,11 @@ $(OUTDIR)/libkatago_cpu.so:
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@
 
-$(OUTDIR)/libkatago_gpu.so:
+$(OUTDIR)/libkatago_gpu.so: $(KATAGO_CMAKE) $(OPENCL_DISPATCH)
+	@if [ -f $(GPU_BUILD)/CMakeCache.txt ]; then \
+	    newer=$$(find $(KATAGO_CMAKE) $(OPENCL_DISPATCH) -newer $(GPU_BUILD)/CMakeCache.txt 2>/dev/null); \
+	    [ -n "$$newer" ] && { echo "  cmake files changed, reconfiguring..."; rm -rf $(GPU_BUILD); }; \
+	fi
 	@echo "=== KataGo GPU (OpenCL) ==="
 	@mkdir -p $(GPU_BUILD)
 	@test -f $(GPU_BUILD)/CMakeCache.txt || \

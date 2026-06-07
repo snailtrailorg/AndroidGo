@@ -8,11 +8,23 @@ BUILD   := $(CURDIR)/../../build/gnugo
 OUTDIR  := $(CURDIR)/../../app/src/main/jniLibs/arm64-v8a
 STRIP   := $(NDK)/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip
 
+# If any cmake file changes, invalidate cache so it reconfigures.
+CMAKE_FILES := $(CURDIR)/CMakeLists.txt \
+               $(CURDIR)/engine/CMakeLists.txt \
+               $(CURDIR)/patterns/CMakeLists.txt \
+               $(CURDIR)/sgf/CMakeLists.txt \
+               $(CURDIR)/utils/CMakeLists.txt \
+               $(CURDIR)/interface/CMakeLists.txt
+
 .PHONY: all clean
 
 all: $(OUTDIR)/libgnugo.so
 
-$(OUTDIR)/libgnugo.so:
+$(OUTDIR)/libgnugo.so: $(CMAKE_FILES)
+	@if [ -f $(BUILD)/CMakeCache.txt ]; then \
+	    newer=$$(find $(CMAKE_FILES) -newer $(BUILD)/CMakeCache.txt 2>/dev/null); \
+	    [ -n "$$newer" ] && { echo "  cmake files changed, reconfiguring..."; rm -rf $(BUILD); }; \
+	fi
 	@echo "=== GNU Go 3.8 ==="
 	@mkdir -p $(BUILD)
 	@test -f $(BUILD)/CMakeCache.txt || \
