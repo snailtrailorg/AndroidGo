@@ -18,7 +18,7 @@ object SgfUtil {
         sb.append("DT[${dateFormat.format(Date())}]\n")
 
         if (state.handicap > 0) {
-            for ((pos, _) in state.stones) {
+            for (pos in computeHandicapPositions(state.size, state.handicap)) {
                 sb.append("AB[${boardPosToGtp(pos.first, pos.second, state.size)}]")
             }
             sb.append("\n")
