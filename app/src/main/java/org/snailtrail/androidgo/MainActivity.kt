@@ -709,7 +709,9 @@ class MainActivity : ComponentActivity() {
                                move.stone.color == StoneColor.Black)
                 }
             }
-            e.getDeadStones()
+            // Pass GoGame's boardSize — e.state.boardSize may be stale
+            // if e.init() returned false.
+            e.getDeadStones(state.size)
         } catch (_: Exception) {
             emptySet()
         } finally {

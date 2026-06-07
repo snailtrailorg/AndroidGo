@@ -124,9 +124,8 @@ class GtpEngine : Closeable {
 
     fun getLastGeneratedMove(): String = nativeGetLastGeneratedMove(nativePtr)
 
-    fun getDeadStones(): Set<Pair<Int, Int>> {
+    fun getDeadStones(boardSize: Int = _state.value.boardSize): Set<Pair<Int, Int>> {
         if (closed) return emptySet()
-        val boardSize = _state.value.boardSize
         val resp = nativeDeadStones(nativePtr)
         val result = mutableSetOf<Pair<Int, Int>>()
         for (coord in resp.split(" ")) {
