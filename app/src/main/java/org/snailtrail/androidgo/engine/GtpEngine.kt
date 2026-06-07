@@ -54,6 +54,11 @@ class GtpEngine : Closeable {
         _state.value = _state.value.copy(running = false)
     }
 
+    fun setFixedHandicap(n: Int): Boolean {
+        check(!closed) { "Engine is closed" }
+        return nativeSetFixedHandicap(nativePtr, n)
+    }
+
     fun init(boardSize: Int = 19, komi: Float = 3.75f): Boolean {
         check(!closed) { "Engine is closed" }
         val ok = nativeInit(nativePtr, boardSize, komi)
@@ -155,6 +160,7 @@ class GtpEngine : Closeable {
     private external fun nativeStart(ptr: Long, command: String): Boolean
     private external fun nativeStop(ptr: Long)
     private external fun nativeIsRunning(ptr: Long): Boolean
+    private external fun nativeSetFixedHandicap(ptr: Long, n: Int): Boolean
     private external fun nativeInit(ptr: Long, boardSize: Int, komi: Float): Boolean
     private external fun nativePlayMove(ptr: Long, black: Boolean, row: Int, col: Int): Boolean
     private external fun nativePass(ptr: Long, black: Boolean): Boolean

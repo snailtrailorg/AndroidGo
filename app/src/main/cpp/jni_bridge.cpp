@@ -52,6 +52,14 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeIsRunning(
 }
 
 JNIEXPORT jboolean JNICALL
+Java_org_snailtrail_androidgo_engine_GtpEngine_nativeSetFixedHandicap(
+    JNIEnv *env, jobject /* this */, jlong ptr, jint n) {
+    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
+    if (!client) return JNI_FALSE;
+    return client->setFixedHandicap(n) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL
 Java_org_snailtrail_androidgo_engine_GtpEngine_nativeInit(
     JNIEnv *env, jobject /* this */, jlong ptr, jint boardSize, jfloat komi) {
     auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);

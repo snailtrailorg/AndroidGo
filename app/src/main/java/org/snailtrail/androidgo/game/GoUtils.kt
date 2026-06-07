@@ -75,6 +75,19 @@ fun parseKataOwnership(raw: String, boardSize: Int): Pair<Map<Pair<Int, Int>, St
     return ownership to scoreLead
 }
 
+/** Standard handicap stone positions, matching GTP fixed_handicap placement. */
+fun computeHandicapPositions(boardSize: Int, handicap: Int): List<Pair<Int, Int>> {
+    if (handicap <= 0) return emptyList()
+    val edge = if (boardSize == 9) 2 else 3
+    val far = boardSize - 1 - edge
+    val center = boardSize / 2
+    val placements = listOf(
+        far to far, edge to edge, edge to far, far to edge,
+        center to center, center to edge, center to far, far to center, edge to center
+    )
+    return placements.take(handicap.coerceAtMost(9))
+}
+
 /** Convert board (row, col) to GTP coordinate string. */
 fun boardPosToGtp(row: Int, col: Int, boardSize: Int): String {
     var c = 'A' + col

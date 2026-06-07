@@ -161,25 +161,10 @@ class GoGame(initialSize: Int = 19) {
             _state.value = _state.value.copy(handicap = 0, komi = 3.75f, currentPlayer = StoneColor.Black)
             return
         }
-        val sz = _state.value.size
-        val edge = if (sz == 9) 2 else 3
-        val far = sz - 1 - edge
-        val center = sz / 2
-        // Standard handicap placement order: corners → center → edges
-        val allPlacements = listOf(
-            far to far,           // 1: upper right
-            edge to edge,         // 2: lower left
-            edge to far,          // 3: lower right
-            far to edge,          // 4: upper left
-            center to center,     // 5: center
-            center to edge,       // 6: left edge
-            center to far,        // 7: right edge
-            far to center,        // 8: top edge
-            edge to center,       // 9: bottom edge
-        )
+        val placements = computeHandicapPositions(_state.value.size, n)
         val stones = mutableMapOf<Pair<Int, Int>, StoneColor>()
-        for (i in 0 until n) {
-            stones[allPlacements[i]] = StoneColor.Black  // weaker player takes Black
+        for (pos in placements) {
+            stones[pos] = StoneColor.Black  // weaker player takes Black
         }
 
         // Chinese rule: handicap → Black gets stones, White plays first, 还子 = n/2
