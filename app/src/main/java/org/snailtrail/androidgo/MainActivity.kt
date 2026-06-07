@@ -61,7 +61,6 @@ import org.snailtrail.androidgo.game.GoGame
 import org.snailtrail.androidgo.game.PrefKeys
 import org.snailtrail.androidgo.game.SgfConstants
 import org.snailtrail.androidgo.game.SgfUtil
-import org.snailtrail.androidgo.game.computeHandicapPositions
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
@@ -696,20 +695,20 @@ class MainActivity : ComponentActivity() {
             tempMgr.ensureEngine(EngineType.KataGoCPU, 5, ComputeBackend.CPU)
             val e = tempMgr.getEngine() ?: throw IllegalStateException("KataGo engine not started")
             e.init(state.size, state.komi)
-            // Handicap stones via GTP fixed_handicap, not play — engine needs
-            // to know the game started with handicap and White moves first.
             if (state.handicap > 0) {
                 e.setFixedHandicap(state.handicap)
             }
-            // Replay actual moves only.  Handicap stones are already placed by
-            // the engine via setFixedHandicap above and must not be replayed.
-            val handicapPositions = computeHandicapPositions(state.size, state.handicap).toSet()
-            for ((pos, color) in state.stones) {
-                if (pos in handicapPositions) continue
-                e.playMove(pos.first, pos.second, color == StoneColor.Black)
+            // Replay moves in order via moveHistory — state.stones is a
+            // HashMap with arbitrary iteration order, which would send
+            // stones to the GTP engine in the wrong sequence.
+            for (move in state.moveHistory) {
+                if (move.isPass) {
+                    e.pass(move.stone.color == StoneColor.Black)
+                } else {
+                    e.playMove(move.stone.row, move.stone.col,
+                               move.stone.color == StoneColor.Black)
+                }
             }
-            e.pass(true)
-            e.pass(false)
             e.getDeadStones()
         } catch (_: Exception) {
             emptySet()
