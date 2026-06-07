@@ -161,6 +161,8 @@ class MainActivity : ComponentActivity() {
         var showMoveNumbers by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
         var scoringInFlight by remember { mutableStateOf(false) }
+        var loadedEngineType by remember { mutableStateOf<EngineType?>(null) }
+        var loadedAiDifficulty by remember { mutableIntStateOf(5) }
 
         // Page state
         var currentPage by remember { mutableStateOf<Page>(Page.Game) }
@@ -184,7 +186,9 @@ class MainActivity : ComponentActivity() {
                 showScore = true
                 currentScore = null  // trigger spinner
                 withContext(Dispatchers.IO) {
-                    val dead = getDeadStonesForScoring(boardState)
+                    val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
+                    val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
+                    val dead = getDeadStonesForScoring(boardState, eType, diff)
                     withContext(Dispatchers.Main) {
                         currentScore = goGame.countTerritory(dead)
                         scoringInFlight = false
@@ -366,7 +370,9 @@ class MainActivity : ComponentActivity() {
                                     showScore = true
                                     currentScore = null
                                     lifecycleScope.launch(Dispatchers.IO) {
-                                        val dead = getDeadStonesForScoring(boardState)
+                                        val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
+                                        val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
+                                        val dead = getDeadStonesForScoring(boardState, eType, diff)
                                         withContext(Dispatchers.Main) {
                                             currentScore = goGame.countTerritory(dead)
                                             scoringInFlight = false
@@ -411,9 +417,19 @@ class MainActivity : ComponentActivity() {
                         showScore = false
                         currentScore = null
                         scoringInFlight = false
-                        // Keep current AI config, only update names from SGF
+                        loadedEngineType = if (parsed.engineTypeName.isNotEmpty())
+                            engineTypeFromName(parsed.engineTypeName) else null
+                        loadedAiDifficulty = parsed.aiDifficulty
+                        // Restore names, engine and difficulty from SGF
                         if (parsed.blackName.isNotEmpty()) blackConfig = blackConfig.copy(name = parsed.blackName)
                         if (parsed.whiteName.isNotEmpty()) whiteConfig = whiteConfig.copy(name = parsed.whiteName)
+                        if (parsed.engineTypeName.isNotEmpty()) {
+                            val et = engineTypeFromName(parsed.engineTypeName)
+                            if (blackConfig.role == PlayerRole.AI)
+                                blackConfig = blackConfig.copy(engine = et.toAiEngine(), difficulty = parsed.aiDifficulty)
+                            if (whiteConfig.role == PlayerRole.AI)
+                                whiteConfig = whiteConfig.copy(engine = et.toAiEngine(), difficulty = parsed.aiDifficulty)
+                        }
                         goGame.reset(parsed.boardSize)
                         goGame.setKomi(parsed.komi)
                         if (parsed.handicap > 0) goGame.setHandicap(parsed.handicap)
@@ -656,7 +672,9 @@ class MainActivity : ComponentActivity() {
             dir.mkdirs()
             val ts = SimpleDateFormat(SgfConstants.DATE_FORMAT, Locale.US).format(Date())
             val file = File(dir, "${SgfConstants.FILE_PREFIX}$ts${SgfConstants.FILE_SUFFIX}")
-            SgfUtil.exportToFile(goGame.state.value, file, blackConfig.name, whiteConfig.name)
+            SgfUtil.exportToFile(goGame.state.value, file, blackConfig.name, whiteConfig.name,
+                engineTypeName(aiEngineType(blackConfig, whiteConfig)),
+                aiDifficulty(blackConfig, whiteConfig))
             Toast.makeText(this, getString(R.string.toast_saved, file.name), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save SGF", e)
@@ -669,7 +687,9 @@ class MainActivity : ComponentActivity() {
         val state = goGame.state.value
         val autoSave = File(filesDir, "autosave.sgf")
         if (state.moveHistory.isNotEmpty() && !state.gameOver) {
-            SgfUtil.exportToFile(state, autoSave, blackConfig.name, whiteConfig.name)
+            SgfUtil.exportToFile(state, autoSave, blackConfig.name, whiteConfig.name,
+                engineTypeName(aiEngineType(blackConfig, whiteConfig)),
+                aiDifficulty(blackConfig, whiteConfig))
         } else {
             autoSave.delete()
         }
@@ -680,19 +700,62 @@ class MainActivity : ComponentActivity() {
         engineManager.close()
     }
 
-    private suspend fun getDeadStonesForScoring(state: BoardState): Set<Pair<Int, Int>> {
-        // Try the current engine first (both GNU Go and KataGo support
-        // final_status_list dead as a standard GTP command).
+    /** Determine which engine type the AI player(s) used. */
+    private fun aiEngineType(black: PlayerConfig, white: PlayerConfig): EngineType {
+        val aiPlayer = when {
+            black.role == PlayerRole.AI -> black
+            white.role == PlayerRole.AI -> white
+            else -> return EngineType.KataGoCPU
+        }
+        return when (aiPlayer.engine) {
+            AiEngine.GnuGo -> EngineType.GnuGo
+            AiEngine.KataGo -> when (aiPlayer.backend) {
+                ComputeBackend.GPU -> EngineType.KataGoGPU
+                ComputeBackend.CPU -> EngineType.KataGoCPU
+            }
+        }
+    }
+
+    private fun aiDifficulty(black: PlayerConfig, white: PlayerConfig): Int {
+        return when {
+            black.role == PlayerRole.AI -> black.difficulty
+            white.role == PlayerRole.AI -> white.difficulty
+            else -> 5
+        }
+    }
+
+    /** Convert SGF AE[...] string back to EngineType. */
+    private fun engineTypeFromName(name: String): EngineType = when (name) {
+        "katago_gpu" -> EngineType.KataGoGPU
+        "katago_cpu" -> EngineType.KataGoCPU
+        else -> EngineType.GnuGo
+    }
+
+    private fun EngineType.toAiEngine(): AiEngine = when (this) {
+        EngineType.GnuGo -> AiEngine.GnuGo
+        EngineType.KataGoCPU, EngineType.KataGoGPU -> AiEngine.KataGo
+    }
+
+    private fun engineTypeName(et: EngineType): String = when (et) {
+        EngineType.KataGoGPU -> "katago_gpu"
+        EngineType.KataGoCPU -> "katago_cpu"
+        EngineType.GnuGo -> "gnugo"
+    }
+
+    private suspend fun getDeadStonesForScoring(state: BoardState,
+                                                 engineType: EngineType = EngineType.KataGoCPU,
+                                                 difficulty: Int = 5): Set<Pair<Int, Int>> {
+        // Use the main engine directly if available — avoids starting a
+        // second instance of the same engine which would fight over fd 0
+        // (both bridges call dup2 on STDIN_FILENO).
         val engine = engineManager.getEngine()
         if (engine != null) {
-            val direct = try { engine.getDeadStones() } catch (_: Exception) { null }
+            val direct = try { engine.getDeadStones(state.size) } catch (_: Exception) { null }
             if (direct != null) return direct
         }
-        // Fallback: start a temporary KataGo for dead stone detection.
-        // This handles Human vs Human games or when the current engine fails.
         val tempMgr = EngineManager(applicationContext)
         return try {
-            tempMgr.ensureEngine(EngineType.KataGoCPU, 5, ComputeBackend.CPU)
+            tempMgr.ensureEngine(engineType, difficulty, ComputeBackend.CPU)
             val e = tempMgr.getEngine() ?: throw IllegalStateException("KataGo engine not started")
             e.init(state.size, state.komi)
             if (state.handicap > 0) {

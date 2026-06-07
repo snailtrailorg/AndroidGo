@@ -9,12 +9,14 @@ object SgfUtil {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
-    fun exportToFile(state: BoardState, file: File, blackName: String = "", whiteName: String = "") {
+    fun exportToFile(state: BoardState, file: File, blackName: String = "", whiteName: String = "",
+                     engineType: String = "", difficulty: Int = 5) {
         val sb = StringBuilder()
         sb.append("(;GM[1]FF[4]AP[${SgfConstants.APP_NAME}]\n")
         if (blackName.isNotEmpty()) sb.append("PB[$blackName]\n")
         if (whiteName.isNotEmpty()) sb.append("PW[$whiteName]\n")
         sb.append("SZ[${state.size}]KM[${state.komi}]HA[${state.handicap}]\n")
+        if (engineType.isNotEmpty()) sb.append("AE[$engineType:$difficulty]\n")
         sb.append("DT[${dateFormat.format(Date())}]\n")
 
         if (state.handicap > 0) {
@@ -91,6 +93,11 @@ object SgfUtil {
                     "HA" -> result.handicap = value.toIntOrNull() ?: 0
                     "PB" -> result.blackName = value
                     "PW" -> result.whiteName = value
+                    "AE" -> {
+                        val parts = value.split(":")
+                        result.engineTypeName = parts[0]
+                        result.aiDifficulty = parts.getOrNull(1)?.toIntOrNull() ?: 5
+                    }
                     "AB" -> gtpToBoardPos(value, result.boardSize)?.let { result.handicapStones.add(it) }
                 }
             }
@@ -193,6 +200,8 @@ data class ParsedSgf(
     var handicap: Int = 0,
     var blackName: String = "",
     var whiteName: String = "",
+    var engineTypeName: String = "",
+    var aiDifficulty: Int = 5,
     val handicapStones: MutableList<Pair<Int, Int>> = mutableListOf(),
     val moves: MutableList<Pair<Int, Int>> = mutableListOf(),
     val nodes: MutableList<SgfNode> = mutableListOf()
