@@ -18,30 +18,32 @@
 ```bash
 export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/27.0.12077973
 
-# Full build (engines + model + APK)
-make all      # build all three engines, auto-deploy default model if needed
-make apk      # assemble debug APK
+# Full build (engines + APK)
+make all      # engines + apk
 make install  # install to connected device
 make run      # launch app on device
 
-# One-shot: all + APK + install
-make all apk install
+# Engine-only (when changing C/C++ code)
+make engines
+
+# One-shot
+make all install
 ```
 
 ## Build Overview
 
 ```
-make all                              gradlew assembleDebug
-───────                              ────────────────────
-model-ready                          Kotlin/Compose → classes.dex
-  ├─ model (auto-deploy)             gtp_client (CMake) → libgtp_client.so
-  │                                   └─ jni_bridge.cpp + gtp_client.cpp
+make engines                           gradlew assembleDebug (make apk)
+────────────                           ──────────────────────────────
+model-ready                            Kotlin/Compose → classes.dex
+  ├─ model (auto-deploy)               gtp_client (CMake) → libgtp_client.so
+  │                                     └─ jni_bridge.cpp + gtp_client.cpp
 gnugo (CMake) → libgnugo.so
-  └─ jni/gnugo/                      打包 → APK
-     ├─ engine/  (static libs)          ├─ lib/arm64-v8a/*.so
-     ├─ patterns/
-     ├─ sgf/                            └─ assets/katago_model.txt.gz
-     ├─ utils/
+  └─ jni/gnugo/                        打包 → APK
+     ├─ engine/  (static libs)            ├─ lib/arm64-v8a/*.so
+     ├─ patterns/                         └─ assets/katago_model.txt.gz
+     ├─ sgf/
+     ├─ utils/                  make all = make engines + make apk
      └─ interface/ (shared lib)
 
 katago-cpu (CMake) → libkatago_cpu.so
@@ -58,18 +60,18 @@ All targets run from project root. `ANDROID_NDK_HOME` is required for engine bui
 ### Top-level Makefile
 
 ```
-make all          Build engines + auto-deploy default model
-make menuconfig   Interactive KataGo model selection
-make model        Deploy selected model to assets/
-make gnugo        Build GNU Go engine only
-make katago-cpu   Build KataGo CPU (Eigen) engine only
-make katago-gpu   Build KataGo GPU (OpenCL) engine only
-make clean        Remove all build artifacts (engines + gradle)
-make verify       Check all engine .so exports
-
-make apk          Assemble debug APK (gradle wrapper)
-make install      Build APK + install via adb
-make run          Launch app on device (adb)
+make all            engines + apk (full build)
+make engines        Build engines + auto-deploy default model
+make menuconfig     Interactive KataGo model selection
+make model          Deploy selected model to assets/
+make apk            Assemble debug APK (gradle wrapper)
+make install        Build APK + install via adb
+make run            Launch app on device (adb)
+make gnugo          Build GNU Go engine only
+make katago-cpu     Build KataGo CPU (Eigen) engine only
+make katago-gpu     Build KataGo GPU (OpenCL) engine only
+make clean          Remove all build artifacts (engines + gradle)
+make verify         Check all engine .so exports
 ```
 
 ### Per-engine Makefiles
@@ -348,5 +350,5 @@ make model apk install
 
 ```bash
 make clean
-make all apk install
+make all install
 ```
