@@ -12,3 +12,4 @@
 *.jks
 *.keystore
 app/debug.keystore
+app/src/main/assets/engine/katago_model.txt.gz

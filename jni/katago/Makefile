@@ -13,14 +13,20 @@ CMAKE_FLAGS := -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--export-dynamic -Wl,--allow-shlib-undefined -Wl,--unresolved-symbols=ignore-in-shared-libs"
 
-.PHONY: all katago-cpu katago-gpu gnugo model clean verify
+.PHONY: all katago-cpu katago-gpu gnugo model menuconfig clean verify
 
 MODEL ?= $(shell grep '^MODEL' $(CURDIR)/model.conf 2>/dev/null | cut -d= -f2 | xargs)
 MODEL_DIR = $(CURDIR)/models/$(MODEL)
 ASSETS_DIR = $(CURDIR)/../../app/src/main/assets/engine
 MODEL_CONFIG_KT = $(CURDIR)/../../app/src/main/java/org/snailtrail/androidgo/engine/ModelConfig.kt
 
-all: katago-cpu katago-gpu gnugo
+all: model-ready katago-cpu katago-gpu gnugo
+
+model-ready:
+	@if [ ! -f $(ASSETS_DIR)/katago_model.txt.gz ]; then \
+	    echo "  Model not deployed — using default from model.conf"; \
+	    $(MAKE) model; \
+	fi
 
 model:
 	@echo "=== Model: $(MODEL) ==="
@@ -32,6 +38,45 @@ model:
 	@ls -lh $(ASSETS_DIR)/katago_model.txt.gz
 	@echo "Model $(MODEL) → katago_model.txt.gz + ModelConfig.kt OK"
 	@cat $(MODEL_CONFIG_KT)
+
+menuconfig:
+	@echo ""
+	@echo "  === KataGo Model Selection ==="
+	@echo ""
+	@n=1; \
+	for d in $(CURDIR)/models/*/; do \
+	    name=$$(basename $$d); \
+	    size=$$(ls -lh $$d/*.txt.gz 2>/dev/null | awk '{print $$5}'); \
+	    visits=$$(head -1 $$d/params.conf 2>/dev/null); \
+	    visits_short=$$(echo $$visits | cut -d, -f1,10); \
+	    marker=" "; \
+	    [ "$$name" = "$(MODEL)" ] && marker=">"; \
+	    printf "  %s %s. %-14s %6s   %s..%s\n" \
+	        "$$marker" "$$n" "$$name" "$$size" \
+	        "$$(echo $$visits | cut -d, -f1)" \
+	        "$$(echo $$visits | rev | cut -d, -f1 | rev)"; \
+	    n=$$((n + 1)); \
+	done; \
+	echo ""; \
+	printf "  Select [1-%d]: " $$((n - 1)); \
+	read sel; \
+	n=1; \
+	for d in $(CURDIR)/models/*/; do \
+	    if [ "$$n" -eq "$$sel" ]; then \
+	        choice=$$(basename $$d); \
+	        break; \
+	    fi; \
+	    n=$$((n + 1)); \
+	done; \
+	if [ -z "$${choice:-}" ]; then \
+	    echo "  Invalid selection."; \
+	    exit 1; \
+	fi; \
+	echo ""; \
+	echo "  Model: $$choice"; \
+	sed -i "s/^MODEL=.*/MODEL=$$choice/" $(CURDIR)/model.conf; \
+	$(MAKE) model
+	@echo ""
 
 verify-model:
 	@zcat $(ASSETS_DIR)/katago_model.txt.gz 2>/dev/null | head -1 || echo "NOT FOUND"

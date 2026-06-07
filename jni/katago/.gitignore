@@ -77,7 +77,7 @@ gtp.cfg
 katago_contribute/
 tmpsgf/
 watchgame.txt
-models/
+# models/ — committed, see model.conf
 python/startposesupload.txt
 for_release/
 
@@ -91,3 +91,4 @@ cpp/build.ninja
 cpp/KataGoSwift.*
 cpp/include/KataGoSwift/KataGoSwift-swift.h
 cpp/external/katagocoreml/proto/
+cpp/tests/models/
