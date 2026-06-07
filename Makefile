@@ -19,8 +19,12 @@ APK     := $(CURDIR)/app/build/outputs/apk/debug/app-debug.apk
 APPID   := org.snailtrail.androidgo
 MAIN    := $(APPID)/.MainActivity
 
+ENGINE_SOS := $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libgnugo.so \
+              $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_cpu.so \
+              $(CURDIR)/app/src/main/jniLibs/arm64-v8a/libkatago_gpu.so
+
 .PHONY: all engines menuconfig model gnugo katago-cpu katago-gpu \
-        clean verify apk install run
+        clean verify apk install run guard-engines
 
 # ── Top-level targets ─────────────────────────────────────────────
 
@@ -37,13 +41,28 @@ menuconfig:
 model:
 	@$(MAKE) -C jni/katago model
 
-apk:
+apk: guard-engines
 	@$(GRADLEW) assembleDebug
+
+guard-engines:
+	@missing=""; \
+	for so in $(ENGINE_SOS); do \
+	    [ -f $$so ] || missing="$$missing  $$so\n"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	    echo "ERROR: Engine .so not found:"; \
+	    printf "$$missing"; \
+	    echo "Run 'make engines' first."; \
+	    exit 1; \
+	fi
 
 install: apk
 	adb install -r $(APK)
 
 run:
+	@if ! adb shell pm list packages $(APPID) 2>/dev/null | grep -q $(APPID); then \
+	    echo "ERROR: $(APPID) not installed. Run 'make install' first."; exit 1; \
+	fi
 	adb shell am start -n $(MAIN)
 
 # ── Individual engines ────────────────────────────────────────────

@@ -130,3 +130,4 @@ verify:
 clean:
 	rm -rf $(CPU_BUILD) $(GPU_BUILD)
 	rm -f $(OUTDIR)/libkatago_cpu.so $(OUTDIR)/libkatago_gpu.so
+	rm -f $(ASSETS_DIR)/katago_model.txt.gz
