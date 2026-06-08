@@ -95,7 +95,10 @@ clean:
 	@$(MAKE) -C jni/gnugo clean
 	@$(MAKE) -C jni/katago clean
 	@rm -f $(CXX_SO)
+	@rm -rf $(CURDIR)/build
+	@rm -rf $(CURDIR)/app/.cxx
 	@$(GRADLEW) clean 2>&1 | tail -1
+	@rm -rf $(CURDIR)/.gradle
 
 verify:
 	@$(MAKE) -C jni/gnugo verify 2>/dev/null || true
