@@ -138,11 +138,7 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
                 Text(stringResource(R.string.about_version, version, revision), fontSize = 13.sp)
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
                 Text(stringResource(R.string.about_gnugo), fontSize = 13.sp)
-                if (modelName.isNotEmpty()) {
-                    Text(stringResource(R.string.about_katago, modelName), fontSize = 13.sp)
-                } else {
-                    Text("KataGo 1.16.5", fontSize = 13.sp)
-                }
+                Text(stringResource(R.string.about_katago, modelName.ifEmpty { "1.16.5" }), fontSize = 13.sp)
                 Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
                 Text(stringResource(R.string.about_github), fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary)

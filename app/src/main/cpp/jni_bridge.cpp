@@ -155,28 +155,12 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeEstimatedScore(
     return env->NewStringUTF(client->estimatedScore().c_str());
 }
 
-JNIEXPORT jint JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetBoardSize(
-    JNIEnv *env, jobject /* this */, jlong ptr) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return 19;
-    return client->boardSize();
-}
-
 JNIEXPORT jboolean JNICALL
 Java_org_snailtrail_androidgo_engine_GtpEngine_nativeIsBlackTurn(
     JNIEnv *env, jobject /* this */, jlong ptr) {
     auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
     if (!client) return JNI_TRUE;
     return client->isBlackTurn() ? JNI_TRUE : JNI_FALSE;
-}
-
-JNIEXPORT jint JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetConsecutivePasses(
-    JNIEnv *env, jobject /* this */, jlong ptr) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return 0;
-    return client->consecutivePasses();
 }
 
 JNIEXPORT jstring JNICALL
@@ -207,29 +191,6 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeDeadStones(
         result += s.toGtp();
     }
     return env->NewStringUTF(result.c_str());
-}
-
-JNIEXPORT jstring JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetStones(
-    JNIEnv *env, jobject /* this */, jlong ptr, jboolean black) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return env->NewStringUTF("");
-
-    auto stones = client->stones(black);
-    std::string result;
-    for (const auto &s : stones) {
-        if (!result.empty()) result += " ";
-        result += s.toGtp();
-    }
-    return env->NewStringUTF(result.c_str());
-}
-
-JNIEXPORT jstring JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeKataAnalyze(
-    JNIEnv *env, jobject /* this */, jlong ptr, jint maxVisits) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return env->NewStringUTF("");
-    return env->NewStringUTF(client->kataAnalyze(maxVisits).c_str());
 }
 
 } // extern "C"

@@ -169,19 +169,8 @@ class GtpEngine : Closeable {
     private external fun nativeGetEngineVersion(ptr: Long): String
     private external fun nativeFinalScore(ptr: Long): String
     private external fun nativeEstimatedScore(ptr: Long): String
-    private external fun nativeGetBoardSize(ptr: Long): Int
     private external fun nativeIsBlackTurn(ptr: Long): Boolean
-    private external fun nativeGetConsecutivePasses(ptr: Long): Int
     private external fun nativeGetLastGeneratedMove(ptr: Long): String
     private external fun nativeInterrupt(ptr: Long)
     private external fun nativeDeadStones(ptr: Long): String
-    private external fun nativeGetStones(ptr: Long, black: Boolean): String
-    private external fun nativeKataAnalyze(ptr: Long, maxVisits: Int): String
-
-    /** Run KataGo analysis and return JSON ownership data.
-     *  Only works with KataGo engine. Returns empty string if not KataGo or on error. */
-    fun kataAnalyze(maxVisits: Int = 50): String {
-        if (closed) return ""
-        return nativeKataAnalyze(nativePtr, maxVisits)
-    }
 }

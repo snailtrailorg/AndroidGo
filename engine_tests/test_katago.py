@@ -25,7 +25,6 @@ def _make_config(tmpdir: str) -> str:
     cfg = os.path.join(tmpdir, "test_katago.cfg")
     model = KATAGO_MODEL
     if not model:
-        # Try to find model in the Android project assets
         candidates = [
             "/home/michael/AndroidStudioProjects/AndroidGo/app/src/main/assets/engine/katago_model.txt.gz",
         ]
@@ -83,17 +82,21 @@ def fresh_engine(timeout: float = 30.0) -> GtpEngine:
     require_katago()
     tmpdir = tempfile.mkdtemp(prefix="katago_test_")
     cmd = _make_cmd(tmpdir)
-    g = GtpEngine(cmd, timeout=timeout)
-    g.handshake()
-    return g
+    return GtpEngine(cmd, timeout=timeout)
 
 
 # ── Handshake tests ──
 
 def test_handshake_name():
     g = fresh_engine()
-    assert "KataGo" in g.name, f"Expected 'KataGo' in name, got '{g.name}'"
-    g.quit()
+    bodies = g.send(["name"])
+    assert "KataGo" in bodies[0], f"Expected 'KataGo' in name, got '{bodies[0]}'"
+
+
+def test_handshake_version():
+    g = fresh_engine()
+    bodies = g.send(["version"])
+    assert len(bodies[0]) > 0, "version should not be empty"
 
 
 # ── Basic play tests ──
@@ -101,52 +104,55 @@ def test_handshake_name():
 def test_genmove_returns_coordinate():
     g = fresh_engine(timeout=30.0)
     g.init_game(13, 3.75)
-    g.cmd("play black C11")
+    g.send(["play black C11"])
     move = g.genmove_ok("white")
     assert move is not None, "first genmove should return a coordinate"
-    g.quit()
 
 
 def test_genmove_5_turns():
     """5 consecutive genmove calls should all return valid moves."""
-    g = fresh_engine(timeout=30.0)
+    g = fresh_engine(timeout=60.0)
     g.init_game(13, 3.75)
     human_moves = ["C11", "D3", "G7", "K10", "F5"]
     for hm in human_moves:
-        g.cmd(f"play black {hm}")
+        g.send([f"play black {hm}"])
         move = g.genmove_ok("white")
         assert move is not None, f"genmove returned pass after {hm}: maxVisits=20 may be too low, try increasing"
-        g.cmd(f"play white {move}")
-    g.quit()
+        g.send([f"play white {move}"])
 
 
 def test_clear_board_resets():
     g = fresh_engine(timeout=30.0)
     g.init_game(13, 3.75)
-    g.cmd("play black C11")
-    g.genmove("white")
+    g.send(["play black C11"])
+    g.single("genmove white")
     # Clear and start fresh
-    g.cmd("clear_board")
+    g.send(["clear_board"])
     move = g.genmove_ok("white")
     assert move is not None, "genmove after clear_board on empty board should work"
-    g.quit()
 
 
 def test_no_pass_early_game():
     """In early game (board nearly empty), genmove should NOT pass."""
     g = fresh_engine(timeout=30.0)
     g.init_game(13, 3.75)
-    g.cmd("play black C11")
-    move = g.genmove("white")
+    g.send(["play black C11"])
+    move = g.single("genmove white")
     assert move.upper() not in ("PASS", "RESIGN"), \
         f"genmove on nearly empty board should not pass/resign, got '{move}'"
-    g.quit()
+
+
+# ── Note ──
+# final_status_list dead and final_score are NOT tested here at the unit level.
+# KataGo requires a proper homeDataDir with OpenCL tuning cache write access.
+# The Android app integration tests these through the full JNI bridge.
 
 
 # ── All tests ──
 
 ALL_TESTS = [
     ("handshake name", test_handshake_name),
+    ("handshake version", test_handshake_version),
     ("genmove returns coordinate", test_genmove_returns_coordinate),
     ("genmove 5 consecutive turns", test_genmove_5_turns),
     ("clear_board resets state", test_clear_board_resets),

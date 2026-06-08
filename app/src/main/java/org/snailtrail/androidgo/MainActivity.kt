@@ -64,7 +64,6 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
-import org.snailtrail.androidgo.game.parseKataOwnership
 import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog

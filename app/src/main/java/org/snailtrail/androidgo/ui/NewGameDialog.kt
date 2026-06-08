@@ -64,23 +64,23 @@ enum class ComputeBackend { CPU, GPU }
 
 data class PlayerConfig(
     val role: PlayerRole = PlayerRole.Human,
-    val name: String = "黑方",
+    val name: String = "",
     val engine: AiEngine = AiEngine.GnuGo,
     val difficulty: Int = 5,
     val backend: ComputeBackend = ComputeBackend.CPU
 )
 
-enum class AiEngine(val label: String) {
-    GnuGo("GNU Go"),
-    KataGo("KataGo")
+enum class AiEngine {
+    GnuGo,
+    KataGo
 }
 
 data class NewGameConfig(
     val boardSize: Int = 13,
     val handicap: Int = 0,
-    val blackPlayer: PlayerConfig = PlayerConfig(name = "黑方"),
+    val blackPlayer: PlayerConfig = PlayerConfig(),
     val whitePlayer: PlayerConfig = PlayerConfig(
-        role = PlayerRole.AI, name = "GNU Go", engine = AiEngine.GnuGo
+        role = PlayerRole.AI, engine = AiEngine.GnuGo
     )
 )
 
@@ -96,26 +96,37 @@ fun NewGameDialog(
     var handicap by remember { mutableIntStateOf(prefs.getInt(PrefKeys.HANDICAP, 0)) }
 
     var blackRole by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_ROLE, PlayerRole.Human)) }
-    var blackName by remember { mutableStateOf(prefs.getString(PrefKeys.BLACK_NAME, "黑方") ?: "黑方") }
-    var blackNameEdited by remember { mutableStateOf(false) }
     var blackEngine by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_ENGINE, AiEngine.GnuGo)) }
     var blackDifficulty by remember { mutableIntStateOf(prefs.getInt(PrefKeys.BLACK_DIFFICULTY, 5)) }
 
     var whiteRole by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_ROLE, PlayerRole.AI)) }
-    var whiteName by remember { mutableStateOf(prefs.getString(PrefKeys.WHITE_NAME, "GNU Go") ?: "GNU Go") }
-    var whiteNameEdited by remember { mutableStateOf(false) }
     var whiteEngine by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_ENGINE, AiEngine.GnuGo)) }
-    var blackBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_BACKEND, ComputeBackend.CPU)) }
     var whiteDifficulty by remember { mutableIntStateOf(prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5)) }
+    var blackBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.BLACK_BACKEND, ComputeBackend.CPU)) }
     var whiteBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_BACKEND, ComputeBackend.CPU)) }
 
     val aiVsAi = blackRole == PlayerRole.AI && whiteRole == PlayerRole.AI
+
+    // Pre-fetch translatable labels so local functions don't need @Composable
+    val gnuGoLabel = stringResource(R.string.engine_gnugo)
+    val kataGoLabel = stringResource(R.string.engine_katago)
+    fun engineLabel(engine: AiEngine) = when (engine) {
+        AiEngine.GnuGo -> gnuGoLabel
+        AiEngine.KataGo -> kataGoLabel
+    }
+
+    var blackName by remember { mutableStateOf(prefs.getString(PrefKeys.BLACK_NAME, null)
+        ?: engineLabel(blackEngine)) }
+    var blackNameEdited by remember { mutableStateOf(false) }
+    var whiteName by remember { mutableStateOf(prefs.getString(PrefKeys.WHITE_NAME, null)
+        ?: engineLabel(whiteEngine)) }
+    var whiteNameEdited by remember { mutableStateOf(false) }
 
     val defaultHumanBlackName = stringResource(R.string.default_black_name)
     val defaultHumanWhiteName = stringResource(R.string.default_white_name)
     fun defaultName(role: PlayerRole, engine: AiEngine, isBlack: Boolean): String = when (role) {
         PlayerRole.Human -> if (isBlack) defaultHumanBlackName else defaultHumanWhiteName
-        PlayerRole.AI -> engine.label
+        PlayerRole.AI -> engineLabel(engine)
     }
 
     Dialog(

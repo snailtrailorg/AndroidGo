@@ -83,7 +83,6 @@ public:
     std::string finalScore();
     std::string estimatedScore();
     std::vector<Stone> deadStones();
-    std::string kataAnalyze(int maxVisits);  // KataGo-specific: returns JSON ownership
     std::vector<Stone> bestMoves(bool black);
     std::vector<Stone> legalMoves(bool black);
     std::vector<Stone> liberties(const Stone &stone);
@@ -113,7 +112,7 @@ private:
 
     // Board state (tracked separately from engine for undo/redo)
     int m_boardSize = 19;
-    float m_komi = 6.5f;
+    float m_komi = 3.75f;
     bool m_blackTurn = true;
     int m_consecutivePasses = 0;
 
@@ -131,7 +130,6 @@ private:
     // GTP communication
     bool sendCommand(const std::string &cmd);
     bool readResponse(std::string &out, bool nonBlocking = false);
-    std::string readLine();
     bool waitResponse(bool nonBlocking = false);
 
     // Interrupt flag — set by interrupt(), checked in readResponse

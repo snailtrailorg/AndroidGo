@@ -12,7 +12,7 @@ object SgfUtil {
     fun exportToFile(state: BoardState, file: File, blackName: String = "", whiteName: String = "",
                      engineType: String = "", difficulty: Int = 5) {
         val sb = StringBuilder()
-        sb.append("(;GM[1]FF[4]AP[${SgfConstants.APP_NAME}]\n")
+        sb.append("(;GM[1]FF[4]AP[${SgfConstants.APP_NAME}:${org.snailtrail.androidgo.BuildConfig.VERSION_NAME}]\n")
         if (blackName.isNotEmpty()) sb.append("PB[$blackName]\n")
         if (whiteName.isNotEmpty()) sb.append("PW[$whiteName]\n")
         sb.append("SZ[${state.size}]KM[${state.komi}]HA[${state.handicap}]\n")
@@ -98,7 +98,9 @@ object SgfUtil {
                         result.engineTypeName = parts[0]
                         result.aiDifficulty = parts.getOrNull(1)?.toIntOrNull() ?: 5
                     }
-                    "AB" -> gtpToBoardPos(value, result.boardSize)?.let { result.handicapStones.add(it) }
+                    "AB" -> value.split(",").forEach { coord ->
+                        gtpToBoardPos(coord.trim(), result.boardSize)?.let { result.handicapStones.add(it) }
+                    }
                 }
             }
         }

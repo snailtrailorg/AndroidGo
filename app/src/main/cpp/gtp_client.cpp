@@ -196,25 +196,6 @@ bool GtpClient::sendCommand(const std::string &cmd) {
     return written == (ssize_t)line.size();
 }
 
-std::string GtpClient::readLine() {
-    std::string line;
-    char c;
-    while (true) {
-        ssize_t n = read(m_stdoutFd, &c, 1);
-        if (n <= 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                // No data yet — wait a bit
-                usleep(10000);
-                continue;
-            }
-            break;
-        }
-        if (c == '\n') break;
-        line += c;
-    }
-    return line;
-}
-
 bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
     if (callbacks.onWaiting) callbacks.onWaiting(true);
 
@@ -614,16 +595,6 @@ std::vector<Stone> GtpClient::deadStones() {
         if (s.isValid()) result.push_back(s);
     }
     return result;
-}
-
-std::string GtpClient::kataAnalyze(int maxVisits) {
-    char buf[64];
-    snprintf(buf, sizeof(buf), "kata-raw-nn all");
-    if (!sendCommand(buf)) return "";
-    std::string resp;
-    if (!readResponse(resp)) return "";
-    GTP_LOG("kata-raw-nn response: %zu bytes", resp.size());
-    return resp;
 }
 
 std::vector<Stone> GtpClient::bestMoves(bool black) {

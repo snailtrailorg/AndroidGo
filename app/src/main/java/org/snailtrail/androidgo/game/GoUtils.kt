@@ -17,14 +17,6 @@ object PrefKeys {
     const val WHITE_BACKEND = "whiteBackend"
 }
 
-object SgfConstants {
-    const val DIR = "sgf"
-    const val DATE_FORMAT = "yyyyMMdd_HHmmss"
-    const val FILE_PREFIX = "game_"
-    const val FILE_SUFFIX = ".sgf"
-    const val APP_NAME = "AndroidGo:1.0"
-}
-
 /**
  * Convert GTP coordinate (e.g. "D4", "K10") to board (row, col).
  * Returns (-1, -1) for pass/resign/empty.
@@ -43,39 +35,6 @@ fun gtpToBoardPos(coord: String, boardSize: Int): Pair<Int, Int> {
     return row to col
 }
 
-/** Parse kata-raw-nn output, extracting ownership map and score lead.
- *  Ownership values: 0=black, 1=white, ~0.5=unsettled (not included).
- *  Returns pair of (ownership map, score lead from white's perspective). */
-fun parseKataOwnership(raw: String, boardSize: Int): Pair<Map<Pair<Int, Int>, StoneColor>, Float> {
-    val ownership = mutableMapOf<Pair<Int, Int>, StoneColor>()
-    var scoreLead = 0f
-    val lines = raw.lines()
-    var inOwnership = false
-    var row = 0
-
-    for (line in lines) {
-        if (line.startsWith("whiteLead ")) {
-            scoreLead = line.substringAfter("whiteLead ").trim().toFloatOrNull() ?: 0f
-        }
-        if (inOwnership) {
-            val vals = line.trim().split("\\s+".toRegex()).mapNotNull { it.toFloatOrNull() }
-            for ((col, v) in vals.withIndex()) {
-                if (col < boardSize && row < boardSize) {
-                    if (v < 0.30f) ownership[row to col] = StoneColor.Black
-                    else if (v > 0.70f) ownership[row to col] = StoneColor.White
-                }
-            }
-            row++
-            if (row >= boardSize) inOwnership = false
-        }
-        if (line.startsWith("whiteOwnership")) {
-            inOwnership = true; row = 0
-        }
-    }
-    return ownership to scoreLead
-}
-
-/** Standard handicap stone positions, matching GTP fixed_handicap placement. */
 fun computeHandicapPositions(boardSize: Int, handicap: Int): List<Pair<Int, Int>> {
     if (handicap <= 0) return emptyList()
     val edge = if (boardSize == 9) 2 else 3
