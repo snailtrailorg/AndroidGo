@@ -64,6 +64,7 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
+import org.snailtrail.androidgo.game.parseKataOwnership
 import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
@@ -159,6 +160,7 @@ class MainActivity : ComponentActivity() {
         var showScore by remember { mutableStateOf(false) }
         var showMoveNumbers by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
+        var currentEval by remember { mutableStateOf<Pair<Map<Pair<Int, Int>, StoneColor>, Float>?>(null) }
         var scoringInFlight by remember { mutableStateOf(false) }
         var loadedEngineType by remember { mutableStateOf<EngineType?>(null) }
         var loadedAiDifficulty by remember { mutableIntStateOf(5) }
@@ -183,7 +185,7 @@ class MainActivity : ComponentActivity() {
             if (boardState.gameOver && !scoringInFlight) {
                 scoringInFlight = true
                 showScore = true
-                currentScore = null  // trigger spinner
+                currentScore = null; currentEval = null  // trigger spinner
                 withContext(Dispatchers.IO) {
                     val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
                     val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
@@ -248,7 +250,11 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
-                                territoryMap = if (showScore) currentScore?.territoryMap ?: emptyMap() else emptyMap(),
+                                territoryMap = when {
+                                    showScore && currentEval != null -> currentEval!!.first
+                                    showScore && currentScore != null -> currentScore!!.territoryMap
+                                    else -> emptyMap()
+                                },
                                 showMoveNumbers = showMoveNumbers
                             )
 
@@ -302,15 +308,15 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // ── Score card / loading ──
-                        if (showScore && currentScore == null) {
+                        if (showScore && currentScore == null && currentEval == null) {
                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                             }
-                        } else if (showScore && currentScore != null) {
-                            val score = currentScore!!
-                            ScoreCard(
-                                score = score,
+                        } else if (showScore && (currentScore != null || currentEval != null)) {
+                            EvalScoreCard(
+                                score = currentScore,
+                                eval = currentEval,
                                 blackName = blackConfig.name,
                                 whiteName = whiteConfig.name,
                                 endGame = boardState.gameOver
@@ -364,17 +370,31 @@ class MainActivity : ComponentActivity() {
                                 if (showScore) {
                                     showScore = false
                                     currentScore = null
+                                    currentEval = null
                                 } else if (!scoringInFlight) {
                                     scoringInFlight = true
                                     showScore = true
                                     currentScore = null
+                                    currentEval = null
                                     lifecycleScope.launch(Dispatchers.IO) {
-                                        val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
-                                        val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
-                                        val dead = getDeadStonesForScoring(boardState, eType, diff)
-                                        withContext(Dispatchers.Main) {
-                                            currentScore = goGame.countTerritory(dead)
-                                            scoringInFlight = false
+                                        // Try KataGo neural net evaluation first
+                                        val engine = engineManager.getEngine()
+                                        val raw = engine?.kataAnalyze(50) ?: ""
+                                        if (raw.isNotEmpty()) {
+                                            val (ownership, scoreLead) = parseKataOwnership(raw, boardState.size)
+                                            withContext(Dispatchers.Main) {
+                                                currentEval = ownership to scoreLead
+                                                scoringInFlight = false
+                                            }
+                                        } else {
+                                            // Fallback: traditional dead stone scoring
+                                            val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
+                                            val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
+                                            val dead = getDeadStonesForScoring(boardState, eType, diff)
+                                            withContext(Dispatchers.Main) {
+                                                currentScore = goGame.countTerritory(dead)
+                                                scoringInFlight = false
+                                            }
                                         }
                                     }
                                 }
@@ -395,6 +415,7 @@ class MainActivity : ComponentActivity() {
                             showNewGameDialog = false
                             showScore = false
                             currentScore = null
+                            currentEval = null
                             scoringInFlight = false
                             engineInitializing = true
                             startNewGame(config,

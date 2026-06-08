@@ -107,6 +107,12 @@
     <string name="end_game_confirm">确认</string>
     <string name="end_game_cancel">取消</string>
 
+    <!-- Evaluation -->
+    <string name="eval_label">AI 评估</string>
+    <string name="eval_black_lead">%1$s 领先 %2$s 目</string>
+    <string name="eval_white_lead">%1$s 领先 %2$s 目</string>
+    <string name="eval_even">均势</string>
+
     <!-- Error Messages -->
     <string name="error_engine_closed">引擎已关闭</string>
     <string name="error_init_timeout">AI引擎初始化超时</string>

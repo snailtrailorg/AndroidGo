@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 
 // ── Bottom bar ──
@@ -115,6 +116,58 @@ fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGa
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+// ── Eval / Score card: evaluation if available, otherwise territory ──
+
+@Composable
+fun EvalScoreCard(
+    score: TerritoryScore?,
+    eval: Pair<Map<Pair<Int, Int>, StoneColor>, Float>?,
+    blackName: String,
+    whiteName: String,
+    endGame: Boolean = false
+) {
+    // Neural net evaluation available — show simplified card
+    if (eval != null) {
+        val (_, scoreLead) = eval
+        val blackLead = -scoreLead  // convert from white perspective
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    stringResource(R.string.eval_label),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    when {
+                        blackLead > 0.5f -> stringResource(R.string.eval_black_lead, blackName, fmtScore(blackLead))
+                        blackLead < -0.5f -> stringResource(R.string.eval_white_lead, whiteName, fmtScore(-blackLead))
+                        else -> stringResource(R.string.eval_even)
+                    },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        return
+    }
+
+    // Traditional territory scoring (fallback)
+    if (score != null) {
+        ScoreCard(score, blackName, whiteName, endGame)
     }
 }
 
