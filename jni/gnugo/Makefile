@@ -31,8 +31,8 @@ $(OUTDIR)/libgnugo.so: $(CMAKE_FILES)
 	    cmake -S $(CURDIR) -B $(BUILD) \
 	    -DCMAKE_TOOLCHAIN_FILE=$(NDK)/build/cmake/android.toolchain.cmake \
 	    -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-26 \
-	    -DCMAKE_BUILD_TYPE=Release 2>&1 | grep -v "Deprecation\|cmake_minimum" | tail -2
-	@cmake --build $(BUILD) -j$$(nproc) 2>&1 | tail -2
+	    -DCMAKE_BUILD_TYPE=Release 2>&1 | grep -v "Deprecation\|cmake_minimum" | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
+	@cmake --build $(BUILD) -j$$(nproc) 2>&1 | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
 	@mkdir -p $(OUTDIR)
 	@cp $(BUILD)/interface/libgnugo.so $@
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true

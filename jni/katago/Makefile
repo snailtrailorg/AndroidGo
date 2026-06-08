@@ -104,8 +104,8 @@ $(OUTDIR)/libkatago_cpu.so: $(KATAGO_CMAKE)
 	@mkdir -p $(CPU_BUILD)
 	@test -f $(CPU_BUILD)/CMakeCache.txt || \
 	    $(CMAKE) -S $(CURDIR) -B $(CPU_BUILD) $(CMAKE_FLAGS) \
-	    -DKATAGO_BACKEND=EIGEN 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
-	@$(CMAKE) --build $(CPU_BUILD) -j$$(nproc) 2>&1 | tail -2
+	    -DKATAGO_BACKEND=EIGEN 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
+	@$(CMAKE) --build $(CPU_BUILD) -j$$(nproc) 2>&1 | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@
 
@@ -118,8 +118,8 @@ $(OUTDIR)/libkatago_gpu.so: $(KATAGO_CMAKE) $(OPENCL_DISPATCH)
 	@mkdir -p $(GPU_BUILD)
 	@test -f $(GPU_BUILD)/CMakeCache.txt || \
 	    $(CMAKE) -S $(CURDIR) -B $(GPU_BUILD) $(CMAKE_FLAGS) \
-	    -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2
-	@$(CMAKE) --build $(GPU_BUILD) -j$$(nproc) 2>&1 | tail -2
+	    -DKATAGO_BACKEND=OPENCL 2>&1 | grep -v "Deprecation\|cmake_minimum\|Call Stack" | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
+	@$(CMAKE) --build $(GPU_BUILD) -j$$(nproc) 2>&1 | tail -2; [ $${PIPESTATUS[0]} -eq 0 ]
 	@$(STRIP) --strip-debug $@ 2>/dev/null || true
 	@ls -lh $@
 
