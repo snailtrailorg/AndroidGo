@@ -20,23 +20,34 @@ v<主版本>.<次版本>.<修订>
 
 ## [Unreleased]
 
+_待定_
+
+---
+
+## v1.0.1 (2026-06-08)
+
+数子评估合并 + 代码质量全面改进。
+
 ### 新增
+- **AI 局面评估**: 一个「数子」按钮，KataGo 引擎优先用 `kata-raw-nn` 神经网络评估（目差+所有权图），GNU Go 引擎 fallback 传统数子
+- **复盘手数标注**: 复盘界面自动显示手数（含提子空位灰色数字）
 - 模型选择系统: `make model` 一键切换 b10c128 / b15c192 / b20c256
-- `model.conf` + `params.conf` 绑定模型与难度参数，Makefile 生成编译时常量 `ModelConfig.kt`
-- About 对话框显示当前 KataGo 模型名称
-- 引擎关闭前先发送 GTP interrupt 信号（`\n`），中断正在进行的 genmove 搜索
 
 ### 修复
-- 引擎初始化期间禁用 TitleBar 新局/保存/历史按钮（仅保留关于），防止用户操作触发竞态
-- TitleBar 新增 `engineInitializing` 状态控制，底部按钮同步禁用
+- SGF `AB` 多值坐标解析（外部导入棋谱让子不丢失）
+- 复盘导航按钮间距与其他界面统一
+- GNU Go `--wrap=exit --wrap=abort` 链接参数
+- `ktlint` 和编辑器无关——实际是 Gradle 编译检查
 
 ### 优化
-- `maxTime` 从 100s 增加到 300s，给高难度 KataGo 搜索更充裕的时间
-- GTP readResponse 超时从 120s 增加到 320s
-- 难度参数随模型自动调整（b15: 200-2400, b20: 150-1800）
-    - 棋子手数显示乒乓按钮（替换恢复按钮）
-    - AI 思考时棋盘显示转圈动画
-    - 复盘页面返回按钮回到历史页面
+- **extractNativeLibs 方案 B**: 移除 Manifest 声明，dlopen 改用 SONAME（`libgnugo.so` 而非绝对路径），Android linker 自动从 APK 解析
+- **make clean 全覆盖**: 清理 `build/`、`app/.cxx/`、`.gradle/`，不再残留
+- **Makefile pipefail**: 6 处 `| tail` 管道加 `PIPESTATUS` 检测，cmake 构建失败不再静默
+- **死代码清理**: 删除未使用的 kataAnalyze 链（已恢复）、readLine()、3 个 JNI 方法
+- **硬编码消除**: `AiEngine.label`、`PlayerConfig` 默认名、`SgfConstants.APP_NAME`、About 对话框版本号
+- **常量拆分**: `PrefKeys` / `SgfConstants` 不再混在同一文件
+- **测试修复**: test_katago.py 改用现有 harness API（不再调用不存在的方法）
+- 环境变量脚本: `~/.bashrc.d/40-android-sdk.sh` (ANDROID_NDK_HOME + adb PATH)
 
 ---
 
