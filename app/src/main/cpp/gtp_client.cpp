@@ -597,6 +597,16 @@ std::vector<Stone> GtpClient::deadStones() {
     return result;
 }
 
+std::string GtpClient::kataAnalyze(int maxVisits) {
+    char buf[64];
+    snprintf(buf, sizeof(buf), "kata-raw-nn all");
+    if (!sendCommand(buf)) return "";
+    std::string resp;
+    if (!readResponse(resp)) return "";
+    GTP_LOG("kata-raw-nn response: %zu bytes", resp.size());
+    return resp;
+}
+
 std::vector<Stone> GtpClient::bestMoves(bool black) {
     std::string cmd = "top_moves_";
     cmd += black ? "black" : "white";

@@ -83,6 +83,7 @@ public:
     std::string finalScore();
     std::string estimatedScore();
     std::vector<Stone> deadStones();
+    std::string kataAnalyze(int maxVisits);  // KataGo-specific: raw neural net evaluation
     std::vector<Stone> bestMoves(bool black);
     std::vector<Stone> legalMoves(bool black);
     std::vector<Stone> liberties(const Stone &stone);
