@@ -156,21 +156,26 @@ fun GoBoardScreen(
                 )
             }
 
-            // Move numbers overlay (inside stones)
+            // Move numbers overlay (inside stones + captured positions)
             if (showMoveNumbers && boardState.moveHistory.isNotEmpty()) {
                 // Build position → move number from moveHistory
+                // Later moves override earlier ones (e.g. recapture)
                 val moveNumbers = mutableMapOf<Pair<Int, Int>, Int>()
                 boardState.moveHistory.forEachIndexed { idx, move ->
                     if (!move.isPass) {
                         moveNumbers[move.stone.row to move.stone.col] = idx + 1
+                        for (cap in move.capturedStones) {
+                            moveNumbers[cap.row to cap.col] = idx + 1
+                        }
                     }
                 }
                 moveNumbers.forEach { (pos, num) ->
                     val text = num.toString()
                     val stoneColor = boardState.stones[pos]
-                    val textColor = when (stoneColor) {
-                        StoneColor.Black -> Color.White
-                        else -> Color.Black
+                    val textColor = when {
+                        stoneColor == StoneColor.Black -> Color.White
+                        stoneColor == StoneColor.White -> Color.Black
+                        else -> Color(0xFF5A5A5A) // captured/empty position — dark gray
                     }
                     val style = TextStyle(
                         fontSize = (cellSize * 0.50f).toSp(),

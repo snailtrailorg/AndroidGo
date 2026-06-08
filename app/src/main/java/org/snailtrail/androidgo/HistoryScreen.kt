@@ -314,7 +314,8 @@ fun ReviewScreen(
                 GoBoardScreen(
                     boardState = boardState,
                     onCellClick = { _, _ -> },
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1f)
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    showMoveNumbers = true
                 )
             }
 
