@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.snailtrail.androidgo.game.EvalResult
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 
@@ -124,15 +125,16 @@ fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGa
 @Composable
 fun EvalScoreCard(
     score: TerritoryScore?,
-    eval: Pair<Map<Pair<Int, Int>, StoneColor>, Float>?,
+    eval: EvalResult?,
     blackName: String,
     whiteName: String,
     endGame: Boolean = false
 ) {
-    // Neural net evaluation available — show simplified card
     if (eval != null) {
-        val (_, scoreLead) = eval
-        val blackLead = -scoreLead  // convert from white perspective
+        val blackLead = -eval.scoreLead
+        val blackWin = 1f - eval.whiteWin
+        val winPct = (if (blackWin > 0.5f) blackWin else 1f - blackWin) * 100f
+        val winSide = if (blackWin > 0.5f) blackName else whiteName
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -150,16 +152,29 @@ fun EvalScoreCard(
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                // Winrate
                 Text(
-                    when {
-                        blackLead > 0.5f -> stringResource(R.string.eval_black_lead, blackName, fmtScore(blackLead))
-                        blackLead < -0.5f -> stringResource(R.string.eval_white_lead, whiteName, fmtScore(-blackLead))
-                        else -> stringResource(R.string.eval_even)
-                    },
+                    stringResource(R.string.eval_winrate, winSide, fmtScore(winPct)),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+                // Score lead with error
+                val leadAbs = kotlin.math.abs(blackLead)
+                if (leadAbs > 0.5f || eval.scoreError > 0f) {
+                    val leadText = when {
+                        blackLead > 0.5f -> stringResource(R.string.eval_black_lead, blackName, fmtScore(blackLead))
+                        blackLead < -0.5f -> stringResource(R.string.eval_white_lead, whiteName, fmtScore(-blackLead))
+                        else -> stringResource(R.string.eval_even)
+                    }
+                    Text(
+                        if (eval.scoreError > 0.5f)
+                            stringResource(R.string.eval_score_uncertain, leadText, fmtScore(eval.scoreError))
+                        else leadText,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
         return

@@ -64,6 +64,7 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
+import org.snailtrail.androidgo.game.EvalResult
 import org.snailtrail.androidgo.game.parseKataOwnership
 import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
@@ -160,7 +161,7 @@ class MainActivity : ComponentActivity() {
         var showScore by remember { mutableStateOf(false) }
         var showMoveNumbers by remember { mutableStateOf(false) }
         var currentScore by remember { mutableStateOf<TerritoryScore?>(null) }
-        var currentEval by remember { mutableStateOf<Pair<Map<Pair<Int, Int>, StoneColor>, Float>?>(null) }
+        var currentEval by remember { mutableStateOf<EvalResult?>(null) }
         var scoringInFlight by remember { mutableStateOf(false) }
         var loadedEngineType by remember { mutableStateOf<EngineType?>(null) }
         var loadedAiDifficulty by remember { mutableIntStateOf(5) }
@@ -251,7 +252,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                                 territoryMap = when {
-                                    showScore && currentEval != null -> currentEval!!.first
+                                    showScore && currentEval != null -> currentEval!!.ownership
                                     showScore && currentScore != null -> currentScore!!.territoryMap
                                     else -> emptyMap()
                                 },
@@ -380,10 +381,10 @@ class MainActivity : ComponentActivity() {
                                         // Try KataGo neural net evaluation first
                                         val engine = engineManager.getEngine()
                                         val raw = engine?.kataAnalyze(50) ?: ""
-                                        if (raw.isNotEmpty()) {
-                                            val (ownership, scoreLead) = parseKataOwnership(raw, boardState.size)
+                                        val result = parseKataOwnership(raw, boardState.size)
+                                        if (result != null) {
                                             withContext(Dispatchers.Main) {
-                                                currentEval = ownership to scoreLead
+                                                currentEval = result
                                                 scoringInFlight = false
                                             }
                                         } else {

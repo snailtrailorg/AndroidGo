@@ -109,9 +109,11 @@
 
     <!-- Evaluation -->
     <string name="eval_label">AI 评估</string>
+    <string name="eval_winrate">%1$s 胜率 %2$s%%</string>
     <string name="eval_black_lead">%1$s 领先 %2$s 目</string>
     <string name="eval_white_lead">%1$s 领先 %2$s 目</string>
     <string name="eval_even">均势</string>
+    <string name="eval_score_uncertain">%1$s  ±%2$s</string>
 
     <!-- Error Messages -->
     <string name="error_engine_closed">引擎已关闭</string>
