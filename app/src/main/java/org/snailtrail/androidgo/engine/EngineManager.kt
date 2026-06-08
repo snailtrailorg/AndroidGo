@@ -21,14 +21,9 @@ class EngineManager(private val context: Context) {
 
     private val mutex = Mutex()
     private var engine: GtpEngine? = null
-    private var enginePath: String? = null
     private var currentType: EngineType? = null
 
     val isRunning: Boolean get() = engine?.isRunning() == true
-
-    private val nativeLibDir: String by lazy {
-        context.applicationInfo.nativeLibraryDir
-    }
 
     val modelName: String get() = MODEL_NAME
 
@@ -40,15 +35,6 @@ class EngineManager(private val context: Context) {
             return@withLock engine ?: throw IllegalStateException("Engine marked running but is null")
         }
         close()
-
-        enginePath = withContext(Dispatchers.IO) {
-            val path = "$nativeLibDir/${type.binaryName}"
-            val f = File(path)
-            if (f.exists() && !f.canExecute() && !f.setExecutable(true, true)) {
-                Log.w(TAG, "Failed to set executable permission on $path")
-            }
-            path
-        }
 
         val args = when (type) {
             EngineType.KataGoGPU, EngineType.KataGoCPU -> {
@@ -63,7 +49,7 @@ class EngineManager(private val context: Context) {
             EngineType.GnuGo -> type.cliArgs.replace("%LEVEL%", difficulty.toString())
         }
 
-        val cmd = "$enginePath $args"
+        val cmd = "${type.binaryName} $args"
         Log.d(TAG, "Starting engine: $cmd")
         val e = GtpEngine()
 
