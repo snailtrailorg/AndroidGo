@@ -19,3 +19,4 @@ app/src/main/jniLibs/arm64-v8a/libkatago_cpu.so
 app/src/main/jniLibs/arm64-v8a/libkatago_gpu.so
 jni/gnugo/config.log
 __pycache__/
+__pycache__/
