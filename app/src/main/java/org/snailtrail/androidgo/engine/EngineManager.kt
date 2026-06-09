@@ -63,7 +63,42 @@ class EngineManager(private val context: Context) {
         return e
     }
 
+    @Deprecated("Use proxy methods instead", level = DeprecationLevel.ERROR)
     fun getEngine(): GtpEngine? = engine
+
+    // ── GTP proxy methods ──
+
+    fun analyze(centiseconds: Int = 100): String {
+        return engine?.analyze(centiseconds) ?: ""
+    }
+
+    fun interrupt() {
+        engine?.interrupt()
+    }
+
+    fun playMove(row: Int, col: Int, black: Boolean): Boolean {
+        return engine?.playMove(row, col, black) ?: false
+    }
+
+    fun generateMove(black: Boolean): Boolean {
+        return engine?.generateMove(black) ?: false
+    }
+
+    fun engineInit(boardSize: Int, komi: Float): Boolean {
+        return engine?.init(boardSize, komi) ?: false
+    }
+
+    fun undo(): Boolean {
+        return engine?.undo() ?: false
+    }
+
+    fun getLastGeneratedMove(): String {
+        return engine?.getLastGeneratedMove() ?: ""
+    }
+
+    fun getDeadStones(boardSize: Int): Set<Pair<Int, Int>> {
+        return try { engine?.getDeadStones(boardSize) ?: emptySet() } catch (_: Exception) { emptySet() }
+    }
 
     fun close() {
         engine?.interrupt()

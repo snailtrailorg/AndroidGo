@@ -20,7 +20,14 @@ v<主版本>.<次版本>.<修订>
 
 ## [Unreleased]
 
-_待定_
+### 变更
+- MVI 架构重构：GameViewModel + UiState/GameEvent/AppBusyState
+- MainActivity 从 800+ 行减至 ~120 行薄壳
+- 引擎封装：EngineManager GTP 代理方法，不暴露裸 engine
+- GTP 串行队列：limitedParallelism(1)，杜绝并发冲突
+- 评估/数子分离：盘中 KataGo 评估、终局传统数子、GNU Go 走数子
+- 按钮文案：数子后「继续」→「返回」
+- 手数按钮：终局时可点击
 
 ---
 

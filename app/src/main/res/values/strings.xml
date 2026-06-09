@@ -22,7 +22,7 @@
     <string name="btn_undo">Undo</string>
     <string name="btn_move_numbers">Moves</string>
     <string name="btn_score">Count</string>
-    <string name="btn_continue">Continue</string>
+    <string name="btn_continue">Back</string>
     <string name="btn_end">End</string>
 
     <!-- Score Card -->
@@ -114,7 +114,6 @@
     <string name="eval_white_lead">%1$s leads by %2$s pts</string>
     <string name="eval_even">Even</string>
     <string name="eval_score_uncertain">%1$s  ±%2$s</string>
-    <string name="eval_unavailable">Evaluation not available</string>
 
     <!-- Error Messages -->
     <string name="error_engine_closed">Engine is closed</string>

@@ -136,10 +136,10 @@ def test_handicap():
 
 
 # ── Note ──
-# final_score / final_status_list dead are NOT tested here.
-# GNU Go 3.8 has a known bug where final_score hangs (infinite loop)
-# on boards with few stones. This is a pre-existing upstream bug.
-# The Android app uses KataGo for final_status_list dead (by design).
+# final_score / final_status_list dead are NOT tested here at unit level.
+# The Android app uses KataGo for final_status_list dead in endgame,
+# and GNU Go's final_status_list dead is exercised through the JNI bridge
+# during mid-game manual scoring (数子).
 
 
 ALL_TESTS = [

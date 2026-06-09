@@ -61,7 +61,7 @@ fun BottomBar(
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onToggleMoveNumbers, enabled = hasMoves && !gameOver && !aiThinking && !engineInitializing && !showScore,
+            onClick = onToggleMoveNumbers, enabled = hasMoves && !aiThinking && !engineInitializing,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
             colors = if (showMoveNumbers) ButtonDefaults.buttonColors(
