@@ -65,7 +65,7 @@ import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 import org.snailtrail.androidgo.game.gtpToBoardPos
 import org.snailtrail.androidgo.game.EvalResult
-import org.snailtrail.androidgo.game.parseKataOwnership
+import org.snailtrail.androidgo.game.parseKataAnalyze
 import org.snailtrail.androidgo.ui.GameInfoBar
 import org.snailtrail.androidgo.ui.NewGameConfig
 import org.snailtrail.androidgo.ui.NewGameDialog
@@ -188,9 +188,7 @@ class MainActivity : ComponentActivity() {
                 showScore = true
                 currentScore = null; currentEval = null  // trigger spinner
                 withContext(Dispatchers.IO) {
-                    val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
-                    val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
-                    val dead = getDeadStonesForScoring(boardState, eType, diff)
+                    val dead = getDeadStonesForScoring(boardState)
                     withContext(Dispatchers.Main) {
                         currentScore = goGame.countTerritory(dead)
                         scoringInFlight = false
@@ -309,10 +307,17 @@ class MainActivity : ComponentActivity() {
                         }
 
                         // ── Score card / loading ──
-                        if (showScore && currentScore == null && currentEval == null) {
+                        if (showScore && currentScore == null && currentEval == null && scoringInFlight) {
                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        } else if (showScore && currentScore == null && currentEval == null && !scoringInFlight) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                contentAlignment = Alignment.Center) {
+                                Text(stringResource(R.string.eval_unavailable),
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         } else if (showScore && (currentScore != null || currentEval != null)) {
                             EvalScoreCard(
@@ -380,20 +385,17 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch(Dispatchers.IO) {
                                         // Try KataGo neural net evaluation first
                                         val engine = engineManager.getEngine()
-                                        val raw = engine?.kataAnalyze(50) ?: ""
-                                        val result = parseKataOwnership(raw, boardState.size)
+                                        val raw = engine?.analyze(100) ?: ""
+                                        val result = parseKataAnalyze(raw, boardState.size, boardState.currentPlayer)
                                         if (result != null) {
                                             withContext(Dispatchers.Main) {
                                                 currentEval = result
                                                 scoringInFlight = false
                                             }
                                         } else {
-                                            // Fallback: traditional dead stone scoring
-                                            val eType = loadedEngineType ?: aiEngineType(blackConfig, whiteConfig)
-                                            val diff = if (loadedEngineType != null) loadedAiDifficulty else aiDifficulty(blackConfig, whiteConfig)
-                                            val dead = getDeadStonesForScoring(boardState, eType, diff)
                                             withContext(Dispatchers.Main) {
-                                                currentScore = goGame.countTerritory(dead)
+                                                currentScore = null
+                                                currentEval = null
                                                 scoringInFlight = false
                                             }
                                         }
@@ -763,44 +765,14 @@ class MainActivity : ComponentActivity() {
         EngineType.GnuGo -> "gnugo"
     }
 
-    private suspend fun getDeadStonesForScoring(state: BoardState,
-                                                 engineType: EngineType = EngineType.KataGoCPU,
-                                                 difficulty: Int = 5): Set<Pair<Int, Int>> {
-        // Use the main engine directly if available — avoids starting a
-        // second instance of the same engine which would fight over fd 0
-        // (both bridges call dup2 on STDIN_FILENO).
+    private fun getDeadStonesForScoring(state: BoardState): Set<Pair<Int, Int>> {
+        // Use the main engine only — never create a temp engine.
+        // Temp engines can corrupt the main engine's GTP state.
         val engine = engineManager.getEngine()
         if (engine != null) {
-            val direct = try { engine.getDeadStones(state.size) } catch (_: Exception) { null }
-            if (direct != null) return direct
+            return try { engine.getDeadStones(state.size) } catch (_: Exception) { emptySet() }
         }
-        val tempMgr = EngineManager(applicationContext)
-        return try {
-            tempMgr.ensureEngine(engineType, difficulty, ComputeBackend.CPU)
-            val e = tempMgr.getEngine() ?: throw IllegalStateException("KataGo engine not started")
-            e.init(state.size, state.komi)
-            if (state.handicap > 0) {
-                e.setFixedHandicap(state.handicap)
-            }
-            // Replay moves in order via moveHistory — state.stones is a
-            // HashMap with arbitrary iteration order, which would send
-            // stones to the GTP engine in the wrong sequence.
-            for (move in state.moveHistory) {
-                if (move.isPass) {
-                    e.pass(move.stone.color == StoneColor.Black)
-                } else {
-                    e.playMove(move.stone.row, move.stone.col,
-                               move.stone.color == StoneColor.Black)
-                }
-            }
-            // Pass GoGame's boardSize — e.state.boardSize may be stale
-            // if e.init() returned false.
-            e.getDeadStones(state.size)
-        } catch (_: Exception) {
-            emptySet()
-        } finally {
-            tempMgr.close()
-        }
+        return emptySet()
     }
 
     private fun loadConfigFromPrefs(prefs: android.content.SharedPreferences): NewGameConfig {

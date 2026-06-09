@@ -114,6 +114,7 @@
     <string name="eval_white_lead">%1$s leads by %2$s pts</string>
     <string name="eval_even">Even</string>
     <string name="eval_score_uncertain">%1$s  ±%2$s</string>
+    <string name="eval_unavailable">Evaluation not available</string>
 
     <!-- Error Messages -->
     <string name="error_engine_closed">Engine is closed</string>

@@ -173,12 +173,12 @@ class GtpEngine : Closeable {
     private external fun nativeGetLastGeneratedMove(ptr: Long): String
     private external fun nativeInterrupt(ptr: Long)
     private external fun nativeDeadStones(ptr: Long): String
-    private external fun nativeKataAnalyze(ptr: Long, maxVisits: Int): String
+    private external fun nativeAnalyze(ptr: Long, intervalCentiseconds: Int): String
 
-    /** Run KataGo analysis and return raw neural net evaluation.
+    /** Run one-shot KataGo analysis and return one analysis line.
      *  Only works with KataGo engine. Returns empty string if not KataGo or on error. */
-    fun kataAnalyze(maxVisits: Int = 50): String {
+    fun analyze(intervalCentiseconds: Int = 100): String {
         if (closed) return ""
-        return nativeKataAnalyze(nativePtr, maxVisits)
+        return nativeAnalyze(nativePtr, intervalCentiseconds)
     }
 }

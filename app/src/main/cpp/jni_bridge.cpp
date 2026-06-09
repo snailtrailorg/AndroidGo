@@ -194,11 +194,11 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeDeadStones(
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeKataAnalyze(
-    JNIEnv *env, jobject /* this */, jlong ptr, jint maxVisits) {
+Java_org_snailtrail_androidgo_engine_GtpEngine_nativeAnalyze(
+    JNIEnv *env, jobject /* this */, jlong ptr, jint intervalCentiseconds) {
     auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
     if (!client) return env->NewStringUTF("");
-    return env->NewStringUTF(client->kataAnalyze(maxVisits).c_str());
+    return env->NewStringUTF(client->analyze(intervalCentiseconds).c_str());
 }
 
 } // extern "C"

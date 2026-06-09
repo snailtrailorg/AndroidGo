@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -74,6 +75,7 @@ fun GoBoardScreen(
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
+    val currentOnCellClick = rememberUpdatedState(onCellClick)
 
     BoxWithConstraints(
         modifier = modifier
@@ -111,7 +113,7 @@ fun GoBoardScreen(
                             .roundToInt().coerceIn(0, n - 1)
                         val row = ((tapOffset.y - offsetY) / cellSize)
                             .roundToInt().coerceIn(0, n - 1)
-                        onCellClick(row, col)
+                        currentOnCellClick.value(row, col)
                     }
                 }
         ) {

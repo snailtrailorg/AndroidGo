@@ -289,6 +289,30 @@ bool GtpClient::readResponse(std::string &out, bool nonBlocking) {
     return success;
 }
 
+bool GtpClient::readAnalyzeLine(std::string &out) {
+    out.clear();
+    char c;
+    int strikes = 0;
+    while (true) {
+        ssize_t n = read(m_stdoutFd, &c, 1);
+        if (n <= 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (++strikes > 12000) { // 60s
+                    GTP_LOG("readAnalyzeLine timeout after 60s");
+                    return false;
+                }
+                usleep(5000);
+                continue;
+            }
+            return false;
+        }
+        if (c == '\n') {
+            return !out.empty();
+        }
+        if (c != '\r') out += c;
+    }
+}
+
 bool GtpClient::waitResponse(bool nonBlocking) {
     std::string dummy;
     return readResponse(dummy, nonBlocking);
@@ -597,14 +621,26 @@ std::vector<Stone> GtpClient::deadStones() {
     return result;
 }
 
-std::string GtpClient::kataAnalyze(int maxVisits) {
-    char buf[64];
-    snprintf(buf, sizeof(buf), "kata-raw-nn all");
-    if (!sendCommand(buf)) return "";
-    std::string resp;
-    if (!readResponse(resp)) return "";
-    GTP_LOG("kata-raw-nn response: %zu bytes", resp.size());
-    return resp;
+std::string GtpClient::analyze(int intervalCentiseconds) {
+    std::string cmd = "kata-analyze interval " + std::to_string(intervalCentiseconds) +
+                      " ownership true maxmoves 1";
+    if (!sendCommand(cmd)) return "";
+
+    // KataGo prints "= \n\n" as GTP response header, then begins
+    // streaming analysis lines. Skip everything until the first "info" line.
+    std::string line;
+    while (readAnalyzeLine(line)) {
+        if (line.find("info ") == 0) break;
+    }
+
+    // Always stop analysis mode before returning to ordinary GTP commands.
+    sendCommand("stop");
+    std::string stopResp;
+    readResponse(stopResp);
+
+    if (line.find("info ") != 0) return "";
+    GTP_LOG("kata-analyze line: %zu bytes", line.size());
+    return line;
 }
 
 std::vector<Stone> GtpClient::bestMoves(bool black) {

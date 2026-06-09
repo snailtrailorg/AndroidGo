@@ -83,7 +83,7 @@ public:
     std::string finalScore();
     std::string estimatedScore();
     std::vector<Stone> deadStones();
-    std::string kataAnalyze(int maxVisits);  // KataGo-specific: raw neural net evaluation
+    std::string analyze(int intervalCentiseconds = 100); // KataGo-specific: one-shot kata-analyze
     std::vector<Stone> bestMoves(bool black);
     std::vector<Stone> legalMoves(bool black);
     std::vector<Stone> liberties(const Stone &stone);
@@ -131,6 +131,7 @@ private:
     // GTP communication
     bool sendCommand(const std::string &cmd);
     bool readResponse(std::string &out, bool nonBlocking = false);
+    bool readAnalyzeLine(std::string &out);
     bool waitResponse(bool nonBlocking = false);
 
     // Interrupt flag — set by interrupt(), checked in readResponse
