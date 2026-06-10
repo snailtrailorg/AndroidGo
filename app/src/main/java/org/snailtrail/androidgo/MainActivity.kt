@@ -167,8 +167,9 @@ fun AndroidGoScreen(
     }
 
     if (state.showNewGameDialog) {
-        NewGameDialog(
-            onConfirm = { vm.onEvent(GameEvent.NewGame(it)) },
+        GameSettingsDialog(
+            onSave = { vm.onEvent(GameEvent.DismissNewGame) },
+            onSaveAndStart = { vm.onEvent(GameEvent.NewGame(it)) },
             onDismiss = { vm.onEvent(GameEvent.DismissNewGame) }
         )
     }
@@ -196,7 +197,8 @@ fun AndroidGoScreen(
                 .statusBarsPadding()
         ) {
             TitleBar(
-                onMenuNewGame = { vm.onEvent(GameEvent.ShowNewGameDialog) },
+                onMenuNewGame = { vm.quickNewGame() },
+                onMenuSettings = { vm.onEvent(GameEvent.ShowNewGameDialog) },
                 onMenuSave = { vm.onEvent(GameEvent.SaveSgf) },
                 onMenuHistory = { vm.onEvent(GameEvent.GoToHistory) },
                 onMenuAbout = { vm.onEvent(GameEvent.ShowAbout) },

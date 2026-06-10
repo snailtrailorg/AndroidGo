@@ -85,8 +85,9 @@ data class NewGameConfig(
 )
 
 @Composable
-fun NewGameDialog(
-    onConfirm: (NewGameConfig) -> Unit,
+fun GameSettingsDialog(
+    onSave: (NewGameConfig) -> Unit,
+    onSaveAndStart: (NewGameConfig) -> Unit,
     onDismiss: () -> Unit
 ) {
     val ctx = LocalContext.current
@@ -253,7 +254,24 @@ fun NewGameDialog(
                                 blackRole, blackName, blackEngine, blackDifficulty,
                                 whiteRole, whiteName, whiteEngine, whiteDifficulty,
                                 blackBackend, whiteBackend)
-                            onConfirm(
+                            onSave(
+                                NewGameConfig(
+                                    boardSize = boardSize,
+                                    handicap = handicap,
+                                    blackPlayer = PlayerConfig(blackRole, blackName, blackEngine, blackDifficulty, blackBackend),
+                                    whitePlayer = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDifficulty, whiteBackend)
+                                )
+                            )
+                        },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)
+                        ) { Text(stringResource(R.string.btn_save), fontSize = 14.sp) }
+                        Button(onClick = {
+                            savePrefs(prefs, boardSize, handicap,
+                                blackRole, blackName, blackEngine, blackDifficulty,
+                                whiteRole, whiteName, whiteEngine, whiteDifficulty,
+                                blackBackend, whiteBackend)
+                            onSaveAndStart(
                                 NewGameConfig(
                                     boardSize = boardSize,
                                     handicap = handicap,

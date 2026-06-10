@@ -22,6 +22,7 @@ import org.snailtrail.androidgo.R
 @Composable
 fun TitleBar(
     onMenuNewGame: () -> Unit,
+    onMenuSettings: () -> Unit,
     onMenuSave: () -> Unit,
     onMenuHistory: () -> Unit,
     onMenuAbout: () -> Unit,
@@ -49,6 +50,15 @@ fun TitleBar(
         ) {
             Icon(painterResource(R.drawable.ic_new_game),
                 contentDescription = stringResource(R.string.menu_new_game),
+                modifier = Modifier.size(24.dp))
+        }
+        IconButton(
+            onClick = onMenuSettings,
+            modifier = Modifier.size(40.dp),
+            enabled = menuEnabled
+        ) {
+            Icon(painterResource(R.drawable.ic_settings),
+                contentDescription = stringResource(R.string.menu_settings),
                 modifier = Modifier.size(24.dp))
         }
         IconButton(

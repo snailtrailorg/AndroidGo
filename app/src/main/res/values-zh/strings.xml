@@ -4,6 +4,7 @@
 
     <!-- Title Bar -->
     <string name="menu_new_game">新局</string>
+    <string name="menu_settings">设置</string>
     <string name="menu_load">加载</string>
     <string name="menu_save">保存</string>
     <string name="menu_history">历史对局</string>
@@ -70,7 +71,8 @@
     <string name="difficulty_label">难度</string>
     <string name="difficulty_value">%1$d级</string>
     <string name="btn_cancel">取消</string>
-    <string name="btn_start">开始</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_start">保存并开始</string>
     <string name="default_black_name">黑方</string>
     <string name="default_white_name">白方</string>
 

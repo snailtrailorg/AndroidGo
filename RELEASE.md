@@ -21,6 +21,8 @@ v<主版本>.<次版本>.<修订>
 ## [Unreleased]
 
 ### 变更
+- TitleBar 五按钮：+ 快速开新局、⚙ 设置对话框、💾 保存、📜 历史、ℹ️ 关于
+- GameSettingsDialog（原 NewGameDialog）：三按钮 取消/保存/保存并开始
 - MVI 架构重构：GameViewModel + UiState/GameEvent/AppBusyState
 - MainActivity 从 800+ 行减至 ~120 行薄壳
 - 引擎封装：EngineManager GTP 代理方法，不暴露裸 engine

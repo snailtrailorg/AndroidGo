@@ -220,6 +220,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     /** Called by GoBoardScreen via GameEvent.CellClick. Routes through event handler. */
     fun requestAiMove() { triggerAiMove() }
 
+    /** Start a new game with current settings without showing the dialog. */
+    fun quickNewGame() {
+        val st = s()
+        startNewGame(NewGameConfig(
+            boardSize = st.boardSize,
+            handicap = goGame.state.value.handicap,
+            blackPlayer = st.blackConfig,
+            whitePlayer = st.whiteConfig
+        ))
+    }
+
     fun updateScoreFromDeadStones() {
         update { it.copy(showScore = true, currentScore = null, currentEval = null, busyState = AppBusyState.Evaluating) }
         viewModelScope.launch {
