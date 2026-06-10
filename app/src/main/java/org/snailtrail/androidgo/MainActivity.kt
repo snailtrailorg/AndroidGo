@@ -147,7 +147,7 @@ fun AndroidGoScreen(
                 onLoad = { parsed, file -> vm.onEvent(GameEvent.LoadSgf(parsed, file)) },
                 onReview = { parsed -> vm.onEvent(GameEvent.ReviewSgf(parsed)) },
                 onDelete = { file -> file.delete() },
-                onBack = { vm.onEvent(GameEvent.GoToHistory) } // actually Back
+                onBack = { vm.onEvent(GameEvent.GoToGame) }
             )
         }
         Page.Review -> {
@@ -279,6 +279,11 @@ fun AndroidGoScreen(
                     whiteName = state.whiteConfig.name,
                     endGame = boardState.gameOver
                 )
+            }
+
+            // Move info card: only when move numbers toggled and score not showing
+            if (state.showMoveNumbers && !state.showScore) {
+                MoveInfoCard(moveHistory = boardState.moveHistory)
             }
 
             BottomBar(

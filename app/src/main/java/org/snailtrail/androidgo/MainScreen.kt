@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.snailtrail.androidgo.game.EvalResult
+import org.snailtrail.androidgo.game.Move
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.game.TerritoryScore
 
@@ -99,11 +100,13 @@ fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGa
         ) {
             Text(
                 stringResource(R.string.score_black, blackName, score.blackStones, score.blackTerritory, fmtScore(score.blackScore)),
-                fontSize = 14.sp
+                fontSize = 12.sp,
+                lineHeight = 14.sp
             )
             Text(
                 stringResource(R.string.score_white, whiteName, score.whiteStones, score.whiteTerritory, fmtScore(score.komi), fmtScore(score.whiteScore + score.komi)),
-                fontSize = 14.sp
+                fontSize = 12.sp,
+                lineHeight = 14.sp
             )
             val diff = (score.blackScore - score.whiteScore) / 2f - score.komi
             Text(
@@ -112,7 +115,8 @@ fun ScoreCard(score: TerritoryScore, blackName: String, whiteName: String, endGa
                     diff < 0 -> stringResource(if (endGame) R.string.score_white_wins else R.string.score_white_leads, whiteName, fmtScore(-diff))
                     else -> stringResource(R.string.score_draw)
                 },
-                fontSize = 14.sp,
+                fontSize = 12.sp,
+                lineHeight = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -149,13 +153,15 @@ fun EvalScoreCard(
             ) {
                 Text(
                     stringResource(R.string.eval_label),
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 // Winrate
                 Text(
                     stringResource(R.string.eval_winrate, winSide, fmtScore(winPct)),
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -171,7 +177,8 @@ fun EvalScoreCard(
                         if (eval.scoreError > 0.5f)
                             stringResource(R.string.eval_score_uncertain, leadText, fmtScore(eval.scoreError))
                         else leadText,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
+                        lineHeight = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -190,6 +197,43 @@ fun fmtScore(f: Float): String {
     if (f == f.toLong().toFloat()) return "${f.toInt()}"
     val s = String.format("%.2f", f)
     return if (s.endsWith("0")) s.dropLast(1) else s
+}
+
+// ── Move info card: shows full history of positions played multiple times ──
+
+@Composable
+fun MoveInfoCard(
+    moveHistory: List<Move>,
+    modifier: Modifier = Modifier
+) {
+    // Build position → list of move numbers
+    val posMoves = mutableMapOf<Pair<Int, Int>, MutableList<Int>>()
+    for ((idx, move) in moveHistory.withIndex()) {
+        if (!move.isPass) {
+            posMoves.getOrPut(move.stone.row to move.stone.col) { mutableListOf() }.add(idx + 1)
+        }
+    }
+    // Filter to only positions with multiple moves
+    val multi = posMoves.filter { it.value.size > 1 }.toList()
+
+    if (multi.isEmpty()) return
+
+    Card(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                multi.joinToString(", ") { (_, nums) -> nums.sortedDescending().joinToString("=") },
+                fontSize = 12.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
 }
 
 // ── About dialog ──

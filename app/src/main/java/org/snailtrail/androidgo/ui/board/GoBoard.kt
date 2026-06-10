@@ -166,9 +166,6 @@ fun GoBoardScreen(
                 boardState.moveHistory.forEachIndexed { idx, move ->
                     if (!move.isPass) {
                         moveNumbers[move.stone.row to move.stone.col] = idx + 1
-                        for (cap in move.capturedStones) {
-                            moveNumbers[cap.row to cap.col] = idx + 1
-                        }
                     }
                 }
                 moveNumbers.forEach { (pos, num) ->

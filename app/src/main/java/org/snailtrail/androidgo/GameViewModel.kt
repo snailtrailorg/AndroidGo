@@ -94,6 +94,7 @@ sealed class GameEvent {
     object ShowAbout : GameEvent()
     object DismissAbout : GameEvent()
     object SaveSgf : GameEvent()
+    object GoToGame : GameEvent()
     object GoToHistory : GameEvent()
     data class LoadSgf(val parsed: ParsedSgf, val file: File) : GameEvent()
     data class ReviewSgf(val parsed: ParsedSgf) : GameEvent()
@@ -165,6 +166,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             GameEvent.ShowAbout -> update { it.copy(showAboutDialog = true) }
             GameEvent.DismissAbout -> update { it.copy(showAboutDialog = false) }
             GameEvent.SaveSgf -> saveSgf()
+            GameEvent.GoToGame -> update { it.copy(currentPage = Page.Game) }
             GameEvent.GoToHistory -> update { it.copy(currentPage = Page.History) }
             is GameEvent.LoadSgf -> loadSgf(event.parsed, event.file)
             is GameEvent.ReviewSgf -> reviewSgf(event.parsed)

@@ -26,8 +26,11 @@ v<主版本>.<次版本>.<修订>
 - 引擎封装：EngineManager GTP 代理方法，不暴露裸 engine
 - GTP 串行队列：limitedParallelism(1)，杜绝并发冲突
 - 评估/数子分离：盘中 KataGo 评估、终局传统数子、GNU Go 走数子
-- 按钮文案：数子后「继续」→「返回」
-- 手数按钮：终局时可点击
+- 复手信息卡：同一位置多手历史显示（如 `10=7=4, 6=3`）
+- 卡片排版统一：ScoreCard/EvalScoreCard/MoveInfoCard 字号 12sp、lineHeight 14sp
+- 手数修复：被提空位保留原落子手数
+- 按钮文案：数子后「继续」→「返回」；手数按钮终局时可点击
+- 历史页面：返回按钮修复（GoToGame 事件）
 
 ---
 
