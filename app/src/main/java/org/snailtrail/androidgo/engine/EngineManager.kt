@@ -88,6 +88,10 @@ class EngineManager(private val context: Context) {
         return engine?.init(boardSize, komi) ?: false
     }
 
+    fun setHandicap(n: Int): Boolean {
+        return engine?.setFixedHandicap(n) ?: false
+    }
+
     fun undo(): Boolean {
         return engine?.undo() ?: false
     }

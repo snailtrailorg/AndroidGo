@@ -323,7 +323,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // Midgame: try KataGo neural net evaluation first,
                 // fall back to traditional dead stone scoring for GNU Go
                 val raw = onGtp { engineManager.analyze(100) }
-                val result = parseKataAnalyze(raw, boardState.size, boardState.currentPlayer)
+                val result = parseAnalysis(raw, boardState.size, boardState.currentPlayer)
                 if (result != null) {
                     update { it.copy(currentEval = result, busyState = AppBusyState.ShowingScore) }
                 } else {
@@ -538,6 +538,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         for ((row, col) in parsed.moves) {
             if (row < 0) goGame.pass()
             else if (!goGame.placeStone(row, col)) break
+        }
+
+        // Restart engine with the loaded board state so dead-stone
+        // scoring works immediately (GNU Go needs final_status_list dead,
+        // KataGo needs analyze).
+        val et = if (parsed.engineTypeName.isNotEmpty())
+            engineTypeFromName(parsed.engineTypeName) else EngineType.KataGoCPU
+        viewModelScope.launch {
+            try {
+                onGtp {
+                    engineManager.ensureEngine(et, parsed.aiDifficulty, ComputeBackend.CPU)
+                    engineManager.engineInit(parsed.boardSize, parsed.komi)
+                    if (parsed.handicap > 0) {
+                        engineManager.setHandicap(parsed.handicap)
+                    }
+                    for (move in goGame.state.value.moveHistory) {
+                        if (!move.isPass) {
+                            engineManager.playMove(
+                                move.stone.row, move.stone.col,
+                                move.stone.color == StoneColor.Black)
+                        }
+                    }
+                }
+            } catch (_: Exception) { /* scoring will return empty on engine failure */ }
         }
 
         update {

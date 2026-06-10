@@ -1,7 +1,7 @@
 package org.snailtrail.androidgo.game
 
 /**
- * Result of one kata-analyze sample.
+ * Result of a position analysis (from kata-analyze GTP command).
  * scoreLead is from white's perspective (positive = white leads).
  */
 data class EvalResult(
@@ -12,12 +12,14 @@ data class EvalResult(
 )
 
 /**
- * Parse one kata-analyze line.
+ * Parse a GTP analysis output line.
  * The app config uses reportAnalysisWinratesAs=SIDETOMOVE, so winrate,
  * scoreLead and ownership are reported from [currentPlayer]'s perspective.
  * Convert them to stable white-perspective fields for UI display.
+ * Returns null if the line cannot be parsed (e.g. GNU Go does not support
+ * this command and returns an empty response).
  */
-fun parseKataAnalyze(line: String, boardSize: Int, currentPlayer: StoneColor): EvalResult? {
+fun parseAnalysis(line: String, boardSize: Int, currentPlayer: StoneColor): EvalResult? {
     if (!line.startsWith("info ")) return null
     val tokens = line.trim().split("\\s+".toRegex())
     var winrate = Float.NaN
