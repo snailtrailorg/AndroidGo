@@ -20,19 +20,25 @@ v<主版本>.<次版本>.<修订>
 
 ## [Unreleased]
 
-### 变更
-- TitleBar 五按钮：+ 快速开新局、⚙ 设置对话框、💾 保存、📜 历史、ℹ️ 关于
-- GameSettingsDialog（原 NewGameDialog）：三按钮 取消/保存/保存并开始
-- MVI 架构重构：GameViewModel + UiState/GameEvent/AppBusyState
-- MainActivity 从 800+ 行减至 ~120 行薄壳
-- 引擎封装：EngineManager GTP 代理方法，不暴露裸 engine
-- GTP 串行队列：limitedParallelism(1)，杜绝并发冲突
-- 评估/数子分离：盘中 KataGo 评估、终局传统数子、GNU Go 走数子
-- 复手信息卡：同一位置多手历史显示（如 `10=7=4, 6=3`）
-- 卡片排版统一：ScoreCard/EvalScoreCard/MoveInfoCard 字号 12sp、lineHeight 14sp
-- 手数修复：被提空位保留原落子手数
-- 按钮文案：数子后「继续」→「返回」；手数按钮终局时可点击
-- 历史页面：返回按钮修复（GoToGame 事件）
+---
+
+## v1.0.2 (2026-06-10)
+
+代码健康检查 + 修复 18 项问题。
+
+### 修复
+- **GNU Go 管道缓冲**：`setvbuf(_IONBF)` → `setlinebuf`，GTP 响应不再碎片化
+- **删除 `Thread.sleep(200)`**：EngineManager.close() 的无意义等待
+- **删除 `initAiEngine` 忙等轮询**：单协程路径不需要 CAS+while 并发控制
+- **删除 4 个未使用 JNI 方法**：`nativePass`/`nativeIsBlackTurn`/`nativeEstimatedScore`/`nativeFinalScore`
+- **`onCleared` 引擎关闭**：改后台线程，删 `onDestroy` 重复调用
+- **引擎启动错误传播**：C++ `m_lastError` → JNI → Kotlin 完整链路
+
+### 优化
+- **命名规范**：`GoBoardScreen` → `GoBoard`，`s()` → `currentState()`
+- **注释修正**：C++ `stdin/stdout pipes` → `pthread + pipe`，`delay()` 魔数加说明
+- **死代码清理**：删除 `getEngine()` 废弃哨兵、`menu_load` 未用字符串、About 重复 fallback
+- **项目文档**：新增 CLAUDE.md，新增 `bug-fix-methodology` 技能，扩展健康检查项
 
 ---
 
