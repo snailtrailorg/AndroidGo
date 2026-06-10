@@ -1,1 +1,2 @@
 jni/katago/models/*.txt.gz filter=lfs diff=lfs merge=lfs -text
+jni/katago/models/**/*.txt.gz filter=lfs diff=lfs merge=lfs -text
