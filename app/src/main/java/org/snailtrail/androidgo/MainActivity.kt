@@ -39,7 +39,7 @@ import org.snailtrail.androidgo.engine.EngineManager
 import org.snailtrail.androidgo.game.PrefKeys
 import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.ui.*
-import org.snailtrail.androidgo.ui.board.GoBoardScreen
+import org.snailtrail.androidgo.ui.board.GoBoard
 import org.snailtrail.androidgo.ui.theme.AndroidGoTheme
 import java.io.File
 
@@ -64,11 +64,6 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // Auto-save is handled via ViewModel in a LaunchedEffect
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        engineManager.close()
     }
 }
 
@@ -221,7 +216,7 @@ fun AndroidGoScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                GoBoardScreen(
+                GoBoard(
                     boardState = boardState,
                     onCellClick = { row, col -> vm.onEvent(GameEvent.CellClick(row, col)) },
                     modifier = Modifier.fillMaxWidth().aspectRatio(1f),

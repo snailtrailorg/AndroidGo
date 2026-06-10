@@ -56,15 +56,16 @@ class EngineManager(private val context: Context) {
         val ok = e.start(cmd)
 
         Log.d(TAG, "Engine start result: $ok, name=${e.state.value.engineName}")
-        if (!ok) { e.close(); check(false) { "Failed to start ${type.name} engine" } }
+        if (!ok) {
+            val detail = e.getLastError().ifEmpty { "unknown error" }
+            e.close()
+            throw IllegalStateException("Failed to start ${type.name} engine: $detail")
+        }
 
         currentType = type
         engine = e
         return e
     }
-
-    @Deprecated("Use proxy methods instead", level = DeprecationLevel.ERROR)
-    fun getEngine(): GtpEngine? = engine
 
     // ── GTP proxy methods ──
 
@@ -106,7 +107,6 @@ class EngineManager(private val context: Context) {
 
     fun close() {
         engine?.interrupt()
-        Thread.sleep(200)  // give engine time to process the interrupt signal
         engine?.close()
         engine = null
         currentType = null

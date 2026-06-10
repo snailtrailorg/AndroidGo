@@ -96,18 +96,6 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativePlayMove(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativePass(
-    JNIEnv *env, jobject /* this */, jlong ptr, jboolean black) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return JNI_FALSE;
-
-    gtp::Move move;
-    move.black = black;
-    move.type = gtp::Move::Pass;
-    return client->playMove(move) ? JNI_TRUE : JNI_FALSE;
-}
-
-JNIEXPORT jboolean JNICALL
 Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGenerateMove(
     JNIEnv *env, jobject /* this */, jlong ptr, jboolean black) {
     auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
@@ -140,30 +128,6 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetEngineVersion(
 }
 
 JNIEXPORT jstring JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeFinalScore(
-    JNIEnv *env, jobject /* this */, jlong ptr) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return env->NewStringUTF("");
-    return env->NewStringUTF(client->finalScore().c_str());
-}
-
-JNIEXPORT jstring JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeEstimatedScore(
-    JNIEnv *env, jobject /* this */, jlong ptr) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return env->NewStringUTF("");
-    return env->NewStringUTF(client->estimatedScore().c_str());
-}
-
-JNIEXPORT jboolean JNICALL
-Java_org_snailtrail_androidgo_engine_GtpEngine_nativeIsBlackTurn(
-    JNIEnv *env, jobject /* this */, jlong ptr) {
-    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
-    if (!client) return JNI_TRUE;
-    return client->isBlackTurn() ? JNI_TRUE : JNI_FALSE;
-}
-
-JNIEXPORT jstring JNICALL
 Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetLastGeneratedMove(
     JNIEnv *env, jobject /* this */, jlong ptr) {
     auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
@@ -191,6 +155,14 @@ Java_org_snailtrail_androidgo_engine_GtpEngine_nativeDeadStones(
         result += s.toGtp();
     }
     return env->NewStringUTF(result.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_snailtrail_androidgo_engine_GtpEngine_nativeGetLastError(
+    JNIEnv *env, jobject /* this */, jlong ptr) {
+    auto *client = reinterpret_cast<gtp::GtpClient *>(ptr);
+    if (!client) return env->NewStringUTF("");
+    return env->NewStringUTF(client->lastError().c_str());
 }
 
 JNIEXPORT jstring JNICALL

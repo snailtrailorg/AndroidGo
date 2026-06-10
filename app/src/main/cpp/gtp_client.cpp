@@ -98,7 +98,9 @@ bool GtpClient::start(const std::string &command) {
     // Try in-process thread mode — supports both KataGo and GNU Go
     void* handle = dlopen(args[0].c_str(), RTLD_NOW | RTLD_LOCAL);
     if (!handle) {
-        GTP_LOG("dlopen failed: %s", dlerror());
+        const char* err = dlerror();
+        GTP_LOG("dlopen failed: %s", err ? err : "unknown");
+        m_lastError = std::string("dlopen: ") + (err ? err : "unknown");
     }
     if (handle) {
         auto* gtpmain = (int(*)(int, const char**, int, int))
@@ -109,6 +111,7 @@ bool GtpClient::start(const std::string &command) {
             // Create pipe pair: stdin for GTP commands, stdout for responses
             int inPipe[2], outPipe[2];
             if (pipe(inPipe) < 0 || pipe(outPipe) < 0) {
+                m_lastError = "pipe creation failed";
                 dlclose(handle);
                 return false;
             }
@@ -139,15 +142,15 @@ bool GtpClient::start(const std::string &command) {
 
             // GTP handshake
             GTP_LOG("handshake: sending name");
-            if (!sendCommand("name")) { GTP_LOG("handshake: send name FAILED"); return false; }
+            if (!sendCommand("name")) { GTP_LOG("handshake: send name FAILED"); m_lastError = "handshake: send name failed"; return false; }
             std::string nameResp;
             GTP_LOG("handshake: waiting for name response...");
-            if (!readResponse(nameResp)) { GTP_LOG("handshake: read name FAILED"); return false; }
+            if (!readResponse(nameResp)) { GTP_LOG("handshake: read name FAILED"); m_lastError = "handshake: no name response"; return false; }
             m_engineName = nameResp;
             GTP_LOG("handshake: name=%s", nameResp.c_str());
-            if (!sendCommand("version")) { GTP_LOG("handshake: send version FAILED"); return false; }
+            if (!sendCommand("version")) { GTP_LOG("handshake: send version FAILED"); m_lastError = "handshake: send version failed"; return false; }
             std::string verResp;
-            if (!readResponse(verResp)) { GTP_LOG("handshake: read version FAILED"); return false; }
+            if (!readResponse(verResp)) { GTP_LOG("handshake: read version FAILED"); m_lastError = "handshake: no version response"; return false; }
             m_engineVersion = verResp;
 
             GTP_LOG("engine started: %s v%s", m_engineName.c_str(), m_engineVersion.c_str());
@@ -157,6 +160,7 @@ bool GtpClient::start(const std::string &command) {
     }
 
     GTP_LOG("no suitable GTP entry point found in %s", args[0].c_str());
+    m_lastError = "no GTP entry point (katago_gtp_main/gnugo_gtp_main) found in " + std::string(args[0].c_str());
     if (callbacks.onError)
         callbacks.onError("Failed to start engine: no GTP entry point found");
     return false;

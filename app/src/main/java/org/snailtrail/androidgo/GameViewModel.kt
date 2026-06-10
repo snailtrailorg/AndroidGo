@@ -112,9 +112,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val goGame = GoGame(13)
     lateinit var engineManager: EngineManager
 
-    // ── Engine guards (leave them for now; migrate into AppBusyState gradually) ──
+    // ── Engine guards ──
     val aiEngineReady = AtomicBoolean(false)
-    val aiEngineInitializing = AtomicBoolean(false)
     val aiGeneration = AtomicInteger(0)
     val aiMoveInFlight = AtomicBoolean(false)
 
@@ -129,7 +128,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // Convenience reads
     val boardState get() = goGame.state.value
-    private fun s() = _state.value
+    private fun currentState() = _state.value
     private fun update(f: (UiState) -> UiState) = _state.update(f)
 
     // ── Init (called from activity) ──
@@ -148,7 +147,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        engineManager.close()
+        // Run in a background thread — close() calls pthread_join which
+        // may wait for the engine thread to exit and must not block the
+        // main thread.
+        Thread { engineManager.close() }.start()
     }
 
     // ── Event handler ──
@@ -182,7 +184,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val st = boardState
         val ctx = getApplication<Application>()
         val autoSave = File(ctx.filesDir, "autosave.sgf")
-        val stt = s()
+        val stt = currentState()
         if (st.moveHistory.isNotEmpty() && !st.gameOver) {
             SgfUtil.exportToFile(st, autoSave, stt.blackConfig.name, stt.whiteConfig.name,
                 engineTypeName(aiEngineType(stt.blackConfig, stt.whiteConfig)),
@@ -217,12 +219,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Public API for UI ──
 
-    /** Called by GoBoardScreen via GameEvent.CellClick. Routes through event handler. */
+    /** Called by GoBoard via GameEvent.CellClick. Routes through event handler. */
     fun requestAiMove() { triggerAiMove() }
 
     /** Start a new game with current settings without showing the dialog. */
     fun quickNewGame() {
-        val st = s()
+        val st = currentState()
         startNewGame(NewGameConfig(
             boardSize = st.boardSize,
             handicap = goGame.state.value.handicap,
@@ -250,13 +252,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Board input guard ──
     private fun boardLocked(): Boolean {
-        val b = s().busyState
+        val b = currentState().busyState
         return b == AppBusyState.AiThinking || b == AppBusyState.Initializing ||
-               b == AppBusyState.Evaluating || s().showScore
+               b == AppBusyState.Evaluating || currentState().showScore
     }
 
     private fun isAiTurn(): Boolean {
-        val st = s()
+        val st = currentState()
         val aiActive = st.blackConfig.role == PlayerRole.AI || st.whiteConfig.role == PlayerRole.AI
         if (!aiActive) return false
         return when (boardState.currentPlayer) {
@@ -279,7 +281,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Pass ──
     private fun onPass() {
-        if (s().busyState == AppBusyState.AiThinking) {
+        if (currentState().busyState == AppBusyState.AiThinking) {
             engineManager.interrupt()
             return
         }
@@ -292,7 +294,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Undo ──
     private fun onUndo() {
-        val st = s()
+        val st = currentState()
         val aiActive = st.blackConfig.role == PlayerRole.AI || st.whiteConfig.role == PlayerRole.AI
         val hist = boardState.moveHistory
 
@@ -315,7 +317,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Score / Evaluate ──
     private fun onScore() {
-        val st = s()
+        val st = currentState()
         if (st.showScore) {
             update { it.copy(showScore = false, currentScore = null, currentEval = null, busyState = AppBusyState.Idle) }
             return
@@ -370,7 +372,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         aiEngineReady.set(false)
-        aiEngineInitializing.set(false)
 
         goGame.reset(config.boardSize)
         if (config.handicap > 0) goGame.setHandicap(config.handicap)
@@ -403,38 +404,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── Init AI engine ──
+    // Only one coroutine ever calls this: either startNewGame or triggerAiMove.
+    // The app does not support AI-vs-AI, so there is no concurrent init scenario.
+    // See memory: [[no-ai-vs-ai]]
     private suspend fun initAiEngine(aiPlayer: PlayerConfig, boardSize: Int, komi: Float) {
         if (aiEngineReady.get()) return
-        if (!aiEngineInitializing.compareAndSet(false, true)) {
-            var waited = 0
-            while (aiEngineInitializing.get() && waited < 300) {
-                kotlinx.coroutines.delay(100)
-                waited++
-            }
-            if (aiEngineReady.get()) return
-            if (aiEngineInitializing.get()) throw IllegalStateException("AI engine init timeout")
-        }
-        try {
-            val engineType = when {
-                aiPlayer.engine == AiEngine.KataGo && aiPlayer.backend == ComputeBackend.GPU -> EngineType.KataGoGPU
-                aiPlayer.engine == AiEngine.KataGo -> EngineType.KataGoCPU
-                else -> EngineType.GnuGo
-            }
-            onGtp { engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend) }
-            onGtp { engineManager.engineInit(boardSize, komi) }
 
-            val stones = goGame.state.value.stones
-            for ((pos, color) in stones) {
-                val (row, col) = pos
-                onGtp { engineManager.playMove(row, col, color == StoneColor.Black) }
-            }
-            aiEngineReady.set(true)
-        } catch (e: Exception) {
-            aiEngineReady.set(false)
-            throw e
-        } finally {
-            aiEngineInitializing.set(false)
+        val engineType = when {
+            aiPlayer.engine == AiEngine.KataGo && aiPlayer.backend == ComputeBackend.GPU -> EngineType.KataGoGPU
+            aiPlayer.engine == AiEngine.KataGo -> EngineType.KataGoCPU
+            else -> EngineType.GnuGo
         }
+        onGtp { engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend) }
+        onGtp { engineManager.engineInit(boardSize, komi) }
+
+        val stones = goGame.state.value.stones
+        for ((pos, color) in stones) {
+            val (row, col) = pos
+            onGtp { engineManager.playMove(row, col, color == StoneColor.Black) }
+        }
+        aiEngineReady.set(true)
     }
 
     // ── Trigger AI move ──
@@ -444,8 +433,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (st.gameOver) return
 
         val aiTurn = when (st.currentPlayer) {
-            StoneColor.Black -> s().blackConfig.role == PlayerRole.AI
-            StoneColor.White -> s().whiteConfig.role == PlayerRole.AI
+            StoneColor.Black -> currentState().blackConfig.role == PlayerRole.AI
+            StoneColor.White -> currentState().whiteConfig.role == PlayerRole.AI
         }
         if (!aiTurn) return
         if (!aiMoveInFlight.compareAndSet(false, true)) return
@@ -456,7 +445,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val justInitialized = !aiEngineReady.get()
                 if (justInitialized) {
-                    val aiPlayer = if (st.currentPlayer == StoneColor.Black) s().blackConfig else s().whiteConfig
+                    val aiPlayer = if (st.currentPlayer == StoneColor.Black) currentState().blackConfig else currentState().whiteConfig
                     onGtp { initAiEngine(aiPlayer, st.size, st.komi) }
                 }
 
@@ -472,6 +461,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val ok = onGtp { engineManager.generateMove(aiBlack) }
 
                 if (ok) {
+                    // Let the "AI thinking" indicator remain visible briefly
+                    // so the user can perceive the AI has responded.
                     kotlinx.coroutines.delay(500)
                     if (aiGeneration.get() != gen) return@launch
 
@@ -486,6 +477,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     } else {
                         goGame.pass()
                     }
+                    // Brief pause to let the board state flow propagate before
+                    // busyState is reset to Idle in the finally block below.
                     kotlinx.coroutines.delay(50)
                 } else {
                     onGtp { engineManager.close() }
@@ -506,7 +499,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // ── Save SGF ──
     private fun saveSgf() {
         try {
-            val st = s()
+            val st = currentState()
             val dir = File(ctx.filesDir, SgfConstants.DIR)
             dir.mkdirs()
             val ts = SimpleDateFormat(SgfConstants.DATE_FORMAT, Locale.US).format(Date())
@@ -525,7 +518,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadSgf(parsed: ParsedSgf, file: File) {
         aiEngineReady.set(false)
         engineManager.close()
-        val st = s()
+        val st = currentState()
 
         val newBlack = if (parsed.blackName.isNotEmpty()) st.blackConfig.copy(name = parsed.blackName) else st.blackConfig
         val newWhite = if (parsed.whiteName.isNotEmpty()) st.whiteConfig.copy(name = parsed.whiteName) else st.whiteConfig
@@ -593,7 +586,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Review SGF ──
     private fun reviewSgf(parsed: ParsedSgf) {
-        val st = s()
+        val st = currentState()
         update {
             it.copy(
                 reviewMoves = parsed.moves,
@@ -610,7 +603,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── Load from review ──
     private fun loadFromReview() {
-        val st = s()
+        val st = currentState()
         aiEngineReady.set(false)
         engineManager.close()
 

@@ -51,7 +51,7 @@ import org.snailtrail.androidgo.game.SgfUtil
 import org.snailtrail.androidgo.game.StoneColor
 import org.snailtrail.androidgo.R
 import org.snailtrail.androidgo.ui.GameInfoBar
-import org.snailtrail.androidgo.ui.board.GoBoardScreen
+import org.snailtrail.androidgo.ui.board.GoBoard
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -311,7 +311,7 @@ fun ReviewScreen(
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                GoBoardScreen(
+                GoBoard(
                     boardState = boardState,
                     onCellClick = { _, _ -> },
                     modifier = Modifier.fillMaxWidth().aspectRatio(1f),

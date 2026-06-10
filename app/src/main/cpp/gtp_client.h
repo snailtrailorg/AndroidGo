@@ -43,7 +43,7 @@ struct ClientCallbacks {
 };
 
 // Pure C++ GTP client — no Qt, no Boost
-// Communicates with a Go engine (GNU Go, KataGo) via stdin/stdout pipes
+// Communicates with a Go engine (GNU Go, KataGo) in-process via pthread + pipe
 class GtpClient {
 public:
     GtpClient();
@@ -74,6 +74,7 @@ public:
     // Queries
     std::string engineName() const { return m_engineName; }
     std::string engineVersion() const { return m_engineVersion; }
+    std::string lastError() const { return m_lastError; }
     int boardSize() const { return m_boardSize; }
     float komi() const { return m_komi; }
     int moveCount();
@@ -110,6 +111,7 @@ private:
     // Engine info
     std::string m_engineName;
     std::string m_engineVersion;
+    std::string m_lastError;
 
     // Board state (tracked separately from engine for undo/redo)
     int m_boardSize = 19;

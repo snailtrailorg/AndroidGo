@@ -12,9 +12,7 @@ data class EngineState(
     val engineVersion: String = "",
     val boardSize: Int = 19,
     val isBlackTurn: Boolean = true,
-    val consecutivePasses: Int = 0,
-    val finalScore: String = "",
-    val estimatedScore: String = ""
+    val consecutivePasses: Int = 0
 )
 
 class GtpEngine : Closeable {
@@ -84,19 +82,6 @@ class GtpEngine : Closeable {
         return ok
     }
 
-    fun pass(black: Boolean): Boolean {
-        check(!closed) { "Engine is closed" }
-        val ok = nativePass(nativePtr, black)
-        if (ok) {
-            val newPasses = _state.value.consecutivePasses + 1
-            _state.value = _state.value.copy(
-                isBlackTurn = !black,
-                consecutivePasses = newPasses
-            )
-        }
-        return ok
-    }
-
     fun generateMove(black: Boolean): Boolean {
         check(!closed) { "Engine is closed" }
         val ok = nativeGenerateMove(nativePtr, black)
@@ -118,10 +103,6 @@ class GtpEngine : Closeable {
         return ok
     }
 
-    fun getFinalScore(): String = nativeFinalScore(nativePtr)
-
-    fun getEstimatedScore(): String = nativeEstimatedScore(nativePtr)
-
     fun getLastGeneratedMove(): String = nativeGetLastGeneratedMove(nativePtr)
 
     fun getDeadStones(boardSize: Int = _state.value.boardSize): Set<Pair<Int, Int>> {
@@ -142,8 +123,6 @@ class GtpEngine : Closeable {
 
     fun isRunning(): Boolean = !closed && nativeIsRunning(nativePtr)
 
-    fun isBlackTurn(): Boolean = nativeIsBlackTurn(nativePtr)
-
     override fun close() {
         if (closed) return
         closed = true
@@ -162,18 +141,19 @@ class GtpEngine : Closeable {
     private external fun nativeSetFixedHandicap(ptr: Long, n: Int): Boolean
     private external fun nativeInit(ptr: Long, boardSize: Int, komi: Float): Boolean
     private external fun nativePlayMove(ptr: Long, black: Boolean, row: Int, col: Int): Boolean
-    private external fun nativePass(ptr: Long, black: Boolean): Boolean
     private external fun nativeGenerateMove(ptr: Long, black: Boolean): Boolean
     private external fun nativeUndo(ptr: Long): Boolean
     private external fun nativeGetEngineName(ptr: Long): String
     private external fun nativeGetEngineVersion(ptr: Long): String
-    private external fun nativeFinalScore(ptr: Long): String
-    private external fun nativeEstimatedScore(ptr: Long): String
-    private external fun nativeIsBlackTurn(ptr: Long): Boolean
     private external fun nativeGetLastGeneratedMove(ptr: Long): String
     private external fun nativeInterrupt(ptr: Long)
     private external fun nativeDeadStones(ptr: Long): String
     private external fun nativeAnalyze(ptr: Long, intervalCentiseconds: Int): String
+    private external fun nativeGetLastError(ptr: Long): String
+
+    /** Return the last error message from the native GTP client.
+     *  Set on start() failure (dlopen, dlsym, handshake, pipe creation). */
+    fun getLastError(): String = if (closed) "" else nativeGetLastError(nativePtr)
 
     /** Run one-shot KataGo analysis and return one analysis line.
      *  Only works with KataGo engine. Returns empty string if not KataGo or on error. */

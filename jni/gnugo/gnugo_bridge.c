@@ -27,9 +27,10 @@ int gnugo_gtp_main(int argc, const char **argv, int stdinFd, int stdoutFd) {
     dup2(stdinFd, STDIN_FILENO);
     dup2(stdoutFd, STDOUT_FILENO);
     close(stdinFd); close(stdoutFd);
-    /* stdout is now a pipe (not a TTY) — force unbuffered so GTP
-       responses are written immediately instead of getting stuck. */
-    setvbuf(stdout, NULL, _IONBF, 0);
+    /* stdout is now a pipe, not a TTY — glibc defaults to full
+       buffering which would hold GTP responses until the buffer fills.
+       Use line buffering so each response flushes automatically on '\n'. */
+    setlinebuf(stdout);
     /* main() expects argv[0] as program name.
        GNU Go's main.c is compiled with -Dmain=gnugo_main to avoid
        conflicting with the bridge entry point. */

@@ -66,7 +66,7 @@ private fun computeLayout(
 }
 
 @Composable
-fun GoBoardScreen(
+fun GoBoard(
     boardState: BoardState,
     onCellClick: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
