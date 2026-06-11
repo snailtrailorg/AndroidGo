@@ -291,9 +291,12 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
                     Text("  ·  ", fontSize = 12.sp)
                     Text(stringResource(R.string.about_oss_model), fontSize = 12.sp)
                 }
-                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
-                Text(stringResource(R.string.about_github), fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.primary)
+                Row(modifier = Modifier.padding(top = 4.dp)) {
+                    Text(stringResource(R.string.about_privacy) + "  ", fontSize = 13.sp)
+                    Text("www.snailtrail.org/privacy/", fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
             }
         },
         confirmButton = {

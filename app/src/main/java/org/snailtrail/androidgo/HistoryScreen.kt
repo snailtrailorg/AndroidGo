@@ -116,7 +116,7 @@ fun HistoryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -159,7 +159,7 @@ fun HistoryScreen(
                                     stringResource(R.string.history_entry_line,
                                         entry.date.ifEmpty { entry.name },
                                         entry.boardSize, entry.moveCount),
-                                    fontSize = 14.sp)
+                                    fontSize = 12.sp)
                                 if (entry.blackName.isNotEmpty() || entry.whiteName.isNotEmpty()) {
                                     Text(
                                         stringResource(R.string.history_players,
@@ -276,7 +276,7 @@ fun ReviewScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -347,14 +347,14 @@ fun ReviewScreen(
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("|<<", fontSize = 14.sp) }
+            ) { Text("|<<", fontSize = 12.sp) }
             Button(
                 onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) },
                 enabled = displayIndex > 0,
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("<<", fontSize = 14.sp) }
+            ) { Text("<<", fontSize = 12.sp) }
             Text(
                 stringResource(R.string.review_move, displayIndex, moves.size),
                 fontSize = 15.sp,
@@ -366,14 +366,14 @@ fun ReviewScreen(
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text(">>", fontSize = 14.sp) }
+            ) { Text(">>", fontSize = 12.sp) }
             Button(
                 onClick = { displayIndex = moves.size },
                 enabled = displayIndex < moves.size,
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text(">>|", fontSize = 14.sp) }
+            ) { Text(">>|", fontSize = 12.sp) }
             }
         } // Column
     } // Scaffold
