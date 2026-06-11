@@ -43,9 +43,9 @@
     <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">由 snailtrail.org 提供</string>
     <string name="about_privacy">隐私策略：</string>
-    <string name="about_privacy_url">androidgo.snailtrail.org/privacy/</string>
+    <string name="about_privacy_url">https://androidgo.snailtrail.org/privacy/</string>
     <string name="about_source_code">开源代码：</string>
-    <string name="about_source_code_url">github.com/snailtrailorg/AndroidGo</string>
+    <string name="about_source_code_url">https://github.com/snailtrailorg/AndroidGo</string>
     <string name="about_oss_licenses">开源协议声明：</string>
     <string name="about_oss_gnugo">GNU Go 3.8 - GPL v3</string>
     <string name="about_oss_katago">KataGo v1.16.5 - KataGo License</string>
