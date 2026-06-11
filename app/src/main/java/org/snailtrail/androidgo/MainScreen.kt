@@ -267,12 +267,29 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 Row {
-                    Text("  ·  ", fontSize = 13.sp)
-                    Text(stringResource(R.string.about_gnugo), fontSize = 13.sp)
+                    Text("  ·  ", fontSize = 12.sp)
+                    Text(stringResource(R.string.about_gnugo), fontSize = 12.sp)
                 }
                 Row {
-                    Text("  ·  ", fontSize = 13.sp)
-                    Text(stringResource(R.string.about_katago, modelName), fontSize = 13.sp)
+                    Text("  ·  ", fontSize = 12.sp)
+                    Text(stringResource(R.string.about_katago, modelName), fontSize = 12.sp)
+                }
+                Text(
+                    stringResource(R.string.about_oss_licenses),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Row {
+                    Text("  ·  ", fontSize = 12.sp)
+                    Text(stringResource(R.string.about_oss_gnugo), fontSize = 12.sp)
+                }
+                Row {
+                    Text("  ·  ", fontSize = 12.sp)
+                    Text(stringResource(R.string.about_oss_katago), fontSize = 12.sp)
+                }
+                Row {
+                    Text("  ·  ", fontSize = 12.sp)
+                    Text(stringResource(R.string.about_oss_model), fontSize = 12.sp)
                 }
                 Text(stringResource(R.string.about_powered_by), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
                 Text(stringResource(R.string.about_github), fontSize = 12.sp,

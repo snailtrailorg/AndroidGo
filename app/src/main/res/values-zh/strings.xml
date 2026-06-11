@@ -35,7 +35,7 @@
     <string name="score_draw">平局</string>
 
     <!-- About Dialog -->
-    <string name="about_title">关于 安卓围棋</string>
+    <string name="about_title">关于安卓围棋</string>
     <string name="about_version">版本 %1$s build %2$s</string>
     <string name="about_desc">安卓围棋应用</string>
     <string name="about_engines_supported">支持的引擎：</string>
@@ -43,6 +43,10 @@
     <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">由 snailtrail.org 提供</string>
     <string name="about_github">github.com/snailtrailorg/AndroidGo</string>
+    <string name="about_oss_licenses">开源协议声明：</string>
+    <string name="about_oss_gnugo">GNU Go 3.8 - GPL v3</string>
+    <string name="about_oss_katago">KataGo v1.16.5 - KataGo License</string>
+    <string name="about_oss_model">KataGo 模型 - KataGo Model License</string>
     <string name="about_close">关闭</string>
 
     <!-- New Game Dialog -->
