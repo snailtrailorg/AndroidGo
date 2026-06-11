@@ -609,22 +609,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // KataGo needs analyze).
         val et = if (parsed.engineTypeName.isNotEmpty())
             engineTypeFromName(parsed.engineTypeName) else EngineType.KataGoCPU
-        viewModelScope.launch {
-            try {
-                onGtp {
-                    engineManager.ensureEngine(et, parsed.aiDifficulty, ComputeBackend.CPU)
-                    engineManager.engineInit(parsed.boardSize, parsed.komi)
-                    if (parsed.handicap > 0) {
-                        engineManager.setHandicap(parsed.handicap)
-                    }
-                    for (move in goGame.state.value.moveHistory) {
-                        engineManager.playMove(
-                            move.stone.row, move.stone.col,
-                            move.stone.color == StoneColor.Black)
-                    }
-                }
-            } catch (_: Exception) { /* scoring will return empty on engine failure */ }
-        }
+        syncEngineToBoard(et, parsed.aiDifficulty, parsed.boardSize, parsed.komi, parsed.handicap)
 
         update {
             it.copy(
@@ -663,12 +648,44 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         goGame.reset(st.reviewSize)
         goGame.setKomi(st.reviewKomi)
+        if (st.reviewHandicap > 0) goGame.setHandicap(st.reviewHandicap)
         for ((row, col) in st.reviewMoves) {
             if (row < 0) goGame.pass()
             else if (!goGame.placeStone(row, col)) break
         }
 
+        syncEngineToBoard(EngineType.KataGoCPU, 5, st.reviewSize, st.reviewKomi, st.reviewHandicap)
+
         update { it.resetToGame() }
+    }
+
+    // ── Engine sync ──
+
+    /** Start a fresh engine and replay the current board state.
+     *  Used by both [loadSgf] and [loadFromReview] so scoring works. */
+    private fun syncEngineToBoard(
+        engineType: EngineType,
+        difficulty: Int,
+        boardSize: Int,
+        komi: Float,
+        handicap: Int
+    ) {
+        viewModelScope.launch {
+            try {
+                onGtp {
+                    engineManager.ensureEngine(engineType, difficulty, ComputeBackend.CPU)
+                    engineManager.engineInit(boardSize, komi)
+                    if (handicap > 0) {
+                        engineManager.setHandicap(handicap)
+                    }
+                    for (move in goGame.state.value.moveHistory) {
+                        engineManager.playMove(
+                            move.stone.row, move.stone.col,
+                            move.stone.color == StoneColor.Black)
+                    }
+                }
+            } catch (_: Exception) { /* scoring will return empty on engine failure */ }
+        }
     }
 
     // ── Engine helpers ──
