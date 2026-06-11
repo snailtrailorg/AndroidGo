@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -107,6 +108,14 @@ fun GameSettingsDialog(
     var whiteBackend by remember { mutableStateOf(enumPref(prefs, PrefKeys.WHITE_BACKEND, ComputeBackend.CPU)) }
 
     val aiVsAi = blackRole == PlayerRole.AI && whiteRole == PlayerRole.AI
+    val scrollState = rememberScrollState()
+
+    // Auto-scroll to bottom when KataGo is selected so the speed warning is visible
+    LaunchedEffect(blackEngine, whiteEngine) {
+        if (blackEngine == AiEngine.KataGo || whiteEngine == AiEngine.KataGo) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
 
     // Pre-fetch translatable labels so local functions don't need @Composable
     val gnuGoLabel = stringResource(R.string.engine_gnugo)
@@ -147,7 +156,7 @@ fun GameSettingsDialog(
                     modifier = Modifier
                         .padding(start = 10.dp, end = 10.dp, top = 10.dp)
                         .heightIn(max = 600.dp)
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(stringResource(R.string.new_game_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -427,6 +436,16 @@ private fun PlayerBlock(
                     onValueChange = { onDifficultyChange(it.roundToInt()) },
                     valueRange = 1f..10f, steps = 8,
                     modifier = Modifier.weight(1f).height(28.dp)
+                )
+            }
+
+            // KataGo speed advisory — always show both CPU and GPU info
+            if (engine == AiEngine.KataGo) {
+                Text(
+                    text = stringResource(R.string.katago_speed_warning),
+                    fontSize = 12.sp,
+                    color = Color(0xFFFF9800),
+                    lineHeight = 16.sp
                 )
             }
         }

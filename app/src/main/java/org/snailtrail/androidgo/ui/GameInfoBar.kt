@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -32,7 +34,8 @@ fun GameInfoBar(
     currentPlayer: StoneColor,
     moveCount: Int,
     gameOver: Boolean,
-    aiThinking: Boolean
+    aiThinking: Boolean,
+    onLayout: ((Float) -> Unit)? = null
 ) {
     val isBlackTurn = currentPlayer == StoneColor.Black && !gameOver
 
@@ -40,7 +43,10 @@ fun GameInfoBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+            .onGloballyPositioned { coords ->
+                onLayout?.invoke(coords.positionInRoot().y + coords.size.height)
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Black stone indicator

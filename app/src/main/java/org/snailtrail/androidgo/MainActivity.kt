@@ -24,6 +24,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -31,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -51,12 +56,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         engineManager = EngineManager(applicationContext)
 
-        val prefs = getSharedPreferences(PrefKeys.NAME, MODE_PRIVATE)
-
         enableEdgeToEdge()
         setContent {
             AndroidGoTheme {
-                AndroidGoScreen(engineManager, prefs, savedInstanceState)
+                AndroidGoScreen(engineManager, savedInstanceState)
             }
         }
     }
@@ -70,17 +73,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AndroidGoScreen(
     engineManager: EngineManager,
-    prefs: android.content.SharedPreferences,
     savedInstanceState: Bundle?
 ) {
     val vm: GameViewModel = viewModel()
     val state by vm.state.collectAsState()
     val ctx = LocalContext.current
 
-    // Init on first composition
+    // Init on first composition — ViewModel reads prefs directly
     LaunchedEffect(Unit) {
-        val savedConfig = loadConfigFromPrefs(prefs)
-        vm.init(engineManager, savedConfig)
+        vm.init(engineManager)
 
         // Restore autosave if returning from background
         val autoSaveDir = File(ctx.filesDir, "sgf")
@@ -183,23 +184,34 @@ fun AndroidGoScreen(
     isAiTurn: Boolean
 ) {
     val busy = state.busyState
+    val ctx = LocalContext.current
+    val prefs = remember { ctx.getSharedPreferences(PrefKeys.NAME, android.content.Context.MODE_PRIVATE) }
+    val firstRunPref = remember { prefs.getBoolean(PrefKeys.FIRST_RUN_COMPLETED, false) }
+    var showFirstRunGuide by remember { mutableStateOf(!firstRunPref) }
+    var guideStep by remember { mutableIntStateOf(0) }
+    var buttonLayouts by remember { mutableStateOf<Map<String, ButtonLayout>>(emptyMap()) }
+    var infoBarBottom by remember { mutableStateOf(0f) }
 
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .statusBarsPadding()
-        ) {
-            TitleBar(
-                onMenuNewGame = { vm.quickNewGame() },
-                onMenuSettings = { vm.onEvent(GameEvent.ShowNewGameDialog) },
-                onMenuSave = { vm.onEvent(GameEvent.SaveSgf) },
-                onMenuHistory = { vm.onEvent(GameEvent.GoToHistory) },
-                onMenuAbout = { vm.onEvent(GameEvent.ShowAbout) },
-                aiThinking = busy == AppBusyState.AiThinking,
-                engineInitializing = busy == AppBusyState.Initializing
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+            ) {
+                TitleBar(
+                    onMenuNewGame = { vm.quickNewGame() },
+                    onMenuSettings = { vm.onEvent(GameEvent.ShowNewGameDialog) },
+                    onMenuSave = { vm.onEvent(GameEvent.SaveSgf) },
+                    onMenuHistory = { vm.onEvent(GameEvent.GoToHistory) },
+                    onMenuAbout = { vm.onEvent(GameEvent.ShowAbout) },
+                    aiThinking = busy == AppBusyState.AiThinking,
+                    engineInitializing = busy == AppBusyState.Initializing,
+                    onButtonLayout = { key, layout ->
+                        buttonLayouts = buttonLayouts + (key to layout)
+                    }
+                )
 
             GameInfoBar(
                 blackName = state.blackConfig.name,
@@ -209,7 +221,8 @@ fun AndroidGoScreen(
                 currentPlayer = boardState.currentPlayer,
                 moveCount = boardState.moveHistory.size,
                 gameOver = boardState.gameOver,
-                aiThinking = busy == AppBusyState.AiThinking
+                aiThinking = busy == AppBusyState.AiThinking,
+                onLayout = { infoBarBottom = it }
             )
 
             Box(
@@ -229,6 +242,9 @@ fun AndroidGoScreen(
                 )
 
                 if (busy == AppBusyState.Initializing) {
+                    val isGpuTuning = !state.gpuTuningCompleted &&
+                        (state.blackConfig.backend == ComputeBackend.GPU ||
+                         state.whiteConfig.backend == ComputeBackend.GPU)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
@@ -239,9 +255,17 @@ fun AndroidGoScreen(
                             modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        Text(stringResource(R.string.engine_starting),
-                            color = androidx.compose.ui.graphics.Color.White, fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            text = stringResource(
+                                if (isGpuTuning) R.string.engine_starting_gpu_tuning
+                                else R.string.engine_starting
+                            ),
+                            color = androidx.compose.ui.graphics.Color.White,
+                            fontSize = if (isGpuTuning) 12.sp else 14.sp,
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                            textAlign = TextAlign.Center,
+                            lineHeight = if (isGpuTuning) 16.sp else 20.sp
+                        )
                     }
                 }
 
@@ -298,34 +322,34 @@ fun AndroidGoScreen(
                 onEnd = { vm.onEvent(GameEvent.End) }
             )
         }
+    } // Scaffold
+
+    // First-run step-by-step guide overlay
+    if (showFirstRunGuide) {
+        FirstRunGuide(
+            buttonLayouts = buttonLayouts,
+            infoBarBottom = infoBarBottom,
+            currentStep = guideStep,
+            onPrev = { guideStep-- },
+            onNext = {
+                if (guideStep >= 4) {
+                    showFirstRunGuide = false
+                    prefs.edit().putBoolean(PrefKeys.FIRST_RUN_COMPLETED, true).apply()
+                } else {
+                    guideStep++
+                }
+            },
+            onSkip = {
+                showFirstRunGuide = false
+                prefs.edit().putBoolean(PrefKeys.FIRST_RUN_COMPLETED, true).apply()
+            }
+        )
     }
+    } // Box
 }
 
 private fun boardLocked(state: UiState): Boolean {
     val b = state.busyState
     return b == AppBusyState.AiThinking || b == AppBusyState.Initializing ||
            b == AppBusyState.Evaluating || state.showScore
-}
-
-private fun loadConfigFromPrefs(prefs: android.content.SharedPreferences): NewGameConfig {
-    fun <T : Enum<T>> enumValue(name: String, default: T): T {
-        val n = prefs.getString(name, null) ?: return default
-        return default.javaClass.enumConstants?.firstOrNull { it.name == n } ?: default
-    }
-    return NewGameConfig(
-        boardSize = prefs.getInt(PrefKeys.BOARD_SIZE, 13).coerceIn(9, 19),
-        handicap = prefs.getInt(PrefKeys.HANDICAP, 0).coerceIn(0, 9),
-        blackPlayer = PlayerConfig(
-            role = enumValue(PrefKeys.BLACK_ROLE, PlayerRole.Human),
-            name = prefs.getString(PrefKeys.BLACK_NAME, "") ?: "",
-            engine = enumValue(PrefKeys.BLACK_ENGINE, AiEngine.GnuGo),
-            difficulty = prefs.getInt(PrefKeys.BLACK_DIFFICULTY, 5).coerceIn(1, 10)
-        ),
-        whitePlayer = PlayerConfig(
-            role = enumValue(PrefKeys.WHITE_ROLE, PlayerRole.AI),
-            name = prefs.getString(PrefKeys.WHITE_NAME, "") ?: "",
-            engine = enumValue(PrefKeys.WHITE_ENGINE, AiEngine.GnuGo),
-            difficulty = prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5).coerceIn(1, 10)
-        )
-    )
 }

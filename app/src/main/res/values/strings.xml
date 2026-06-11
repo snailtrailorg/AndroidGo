@@ -38,6 +38,7 @@
     <string name="about_title">About AndroidGo</string>
     <string name="about_version">Version %1$s build %2$s</string>
     <string name="about_desc">Android Go Application</string>
+    <string name="about_engines_supported">Supported Engines:</string>
     <string name="about_gnugo">GNU Go 3.8</string>
     <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">Powered by snailtrail.org</string>
@@ -119,4 +120,25 @@
     <!-- Error Messages -->
     <string name="error_engine_closed">Engine is closed</string>
     <string name="error_init_timeout">AI engine init timeout</string>
+
+    <!-- First-Run Guide -->
+    <string name="first_run_title">Menu Guide</string>
+    <string name="first_run_item_label">Item:</string>
+    <string name="first_run_desc_label">Description:</string>
+    <string name="first_run_guide_new_game">Start a new game</string>
+    <string name="first_run_guide_settings">Configure game settings</string>
+    <string name="first_run_guide_save">Save current game</string>
+    <string name="first_run_guide_history">View game history</string>
+    <string name="first_run_guide_about">About and version info</string>
+    <string name="first_run_step_counter">%1$d / %2$d</string>
+    <string name="first_run_prev">Prev</string>
+    <string name="first_run_next">Next</string>
+    <string name="first_run_skip">Skip</string>
+    <string name="first_run_done">Done</string>
+
+    <!-- GPU Tuning -->
+    <string name="engine_starting_gpu_tuning">First-time GPU setup.\nCompiling and tuning OpenCL benchmarks (about 1–5 min).\nSubsequent games will start faster.</string>
+
+    <!-- KataGo Speed Warning -->
+    <string name="katago_speed_warning">KataGo runs slower on mobile devices. Each move may take 20–300s depending on difficulty level. Please be patient.\nUsing the phone\'s GPU may reduce thinking time, but the first run requires 1–5 minutes for GPU performance tuning — also please be patient.</string>
 </resources>

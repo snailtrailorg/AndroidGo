@@ -244,14 +244,25 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
     val revision = BuildConfig.GIT_REVISION
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.about_title)) },
+        title = { Text(stringResource(R.string.about_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(stringResource(R.string.about_version, version, revision), fontSize = 13.sp)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
-                Text(stringResource(R.string.about_gnugo), fontSize = 13.sp)
-                Text(stringResource(R.string.about_katago, modelName), fontSize = 13.sp)
-                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
+                Text(stringResource(R.string.about_version, version, revision), fontSize = 13.sp)
+                Text(
+                    stringResource(R.string.about_engines_supported),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Row {
+                    Text("  ·  ", fontSize = 13.sp)
+                    Text(stringResource(R.string.about_gnugo), fontSize = 13.sp)
+                }
+                Row {
+                    Text("  ·  ", fontSize = 13.sp)
+                    Text(stringResource(R.string.about_katago, modelName), fontSize = 13.sp)
+                }
+                Text(stringResource(R.string.about_powered_by), fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
                 Text(stringResource(R.string.about_github), fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary)
             }

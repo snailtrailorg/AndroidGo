@@ -12,12 +12,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.snailtrail.androidgo.R
+
+data class ButtonLayout(
+    val position: Offset,
+    val size: IntSize
+)
 
 @Composable
 fun TitleBar(
@@ -27,8 +37,13 @@ fun TitleBar(
     onMenuHistory: () -> Unit,
     onMenuAbout: () -> Unit,
     aiThinking: Boolean = false,
-    engineInitializing: Boolean = false
+    engineInitializing: Boolean = false,
+    onButtonLayout: ((String, ButtonLayout) -> Unit)? = null
 ) {
+    // Helper: track layout of a button
+    fun Modifier.trackButton(key: String): Modifier = this.onGloballyPositioned { coords ->
+        onButtonLayout?.invoke(key, ButtonLayout(coords.positionInRoot(), coords.size))
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -45,7 +60,7 @@ fun TitleBar(
         val menuEnabled = !aiThinking && !engineInitializing
         IconButton(
             onClick = onMenuNewGame,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).trackButton("new_game"),
             enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_new_game),
@@ -54,7 +69,7 @@ fun TitleBar(
         }
         IconButton(
             onClick = onMenuSettings,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).trackButton("settings"),
             enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_settings),
@@ -63,7 +78,7 @@ fun TitleBar(
         }
         IconButton(
             onClick = onMenuSave,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).trackButton("save"),
             enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_save),
@@ -72,14 +87,14 @@ fun TitleBar(
         }
         IconButton(
             onClick = onMenuHistory,
-            modifier = Modifier.size(40.dp),
+            modifier = Modifier.size(40.dp).trackButton("history"),
             enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_history),
                 contentDescription = stringResource(R.string.menu_history),
                 modifier = Modifier.size(24.dp))
         }
-        IconButton(onClick = onMenuAbout, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onMenuAbout, modifier = Modifier.size(40.dp).trackButton("about")) {
             Icon(painterResource(R.drawable.ic_about),
                 contentDescription = stringResource(R.string.menu_about),
                 modifier = Modifier.size(24.dp))

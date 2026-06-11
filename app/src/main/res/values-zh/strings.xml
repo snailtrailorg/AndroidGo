@@ -38,6 +38,7 @@
     <string name="about_title">关于 安卓围棋</string>
     <string name="about_version">版本 %1$s build %2$s</string>
     <string name="about_desc">安卓围棋应用</string>
+    <string name="about_engines_supported">支持的引擎：</string>
     <string name="about_gnugo">GNU Go 3.8</string>
     <string name="about_katago">KataGo 1.16.5 · %1$s</string>
     <string name="about_powered_by">由 snailtrail.org 提供</string>
@@ -119,4 +120,25 @@
     <!-- Error Messages -->
     <string name="error_engine_closed">引擎已关闭</string>
     <string name="error_init_timeout">AI引擎初始化超时</string>
+
+    <!-- First-Run Guide -->
+    <string name="first_run_title">菜单说明</string>
+    <string name="first_run_item_label">菜单项：</string>
+    <string name="first_run_desc_label">功能说明：</string>
+    <string name="first_run_guide_new_game">开始新对局</string>
+    <string name="first_run_guide_settings">配置对局参数</string>
+    <string name="first_run_guide_save">保存当前棋局</string>
+    <string name="first_run_guide_history">查看历史对局</string>
+    <string name="first_run_guide_about">关于和版本信息</string>
+    <string name="first_run_step_counter">%1$d / %2$d</string>
+    <string name="first_run_prev">上一步</string>
+    <string name="first_run_next">下一步</string>
+    <string name="first_run_skip">跳过</string>
+    <string name="first_run_done">完成</string>
+
+    <!-- GPU Tuning -->
+    <string name="engine_starting_gpu_tuning">首次使用 GPU 引擎需要编译和调优 OpenCL 核心，约需 1–5 分钟。\n后续对局将快速启动。</string>
+
+    <!-- KataGo Speed Warning -->
+    <string name="katago_speed_warning">KataGo 在手机上运行速度较慢，AI 每走一步需要思考大概 20–300 秒，设置的难度越大，需要的时间越长，请耐心等待。\n使用手机的 GPU 来运行 KataGo 引擎，有一定概率减少 AI 思考时间，但初次运行需要 1–5 分钟进行 GPU 性能调优，也请耐心等待。</string>
 </resources>

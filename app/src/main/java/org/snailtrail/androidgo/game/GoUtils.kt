@@ -15,6 +15,8 @@ object PrefKeys {
     const val WHITE_DIFFICULTY = "whiteDifficulty"
     const val BLACK_BACKEND = "blackBackend"
     const val WHITE_BACKEND = "whiteBackend"
+    const val FIRST_RUN_COMPLETED = "firstRunCompleted"
+    const val KATAGO_GPU_TUNING_COMPLETED = "katagoGpuTuningCompleted"
 }
 
 /**

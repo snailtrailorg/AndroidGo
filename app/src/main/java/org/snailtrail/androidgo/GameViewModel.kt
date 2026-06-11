@@ -50,6 +50,7 @@ data class UiState(
     val currentScore: TerritoryScore? = null,
     val loadedEngineType: EngineType? = null,
     val loadedAiDifficulty: Int = 5,
+    val gpuTuningCompleted: Boolean = false,
 
     // Pages
     val currentPage: Page = Page.Game,
@@ -69,7 +70,16 @@ data class UiState(
 
     // Toast
     val toastMessage: String? = null
-)
+) {
+    /** Clean reset for loading a game from history or review. */
+    fun resetToGame(): UiState = copy(
+        busyState = AppBusyState.Idle,
+        showScore = false,
+        currentScore = null,
+        currentEval = null,
+        currentPage = Page.Game
+    )
+}
 
 // ── Page ──
 
@@ -132,17 +142,60 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun update(f: (UiState) -> UiState) = _state.update(f)
 
     // ── Init (called from activity) ──
-    fun init(engineMgr: EngineManager, savedConfig: NewGameConfig) {
+    fun init(engineMgr: EngineManager) {
         engineManager = engineMgr
+        val ctx = getApplication<Application>()
+        val prefs = ctx.getSharedPreferences(PrefKeys.NAME, android.content.Context.MODE_PRIVATE)
+
+        val blackRole    = prefs.getEnum(PrefKeys.BLACK_ROLE,    PlayerRole.Human)
+        val whiteRole    = prefs.getEnum(PrefKeys.WHITE_ROLE,    PlayerRole.AI)
+        val blackEngine  = prefs.getEnum(PrefKeys.BLACK_ENGINE,  AiEngine.GnuGo)
+        val whiteEngine  = prefs.getEnum(PrefKeys.WHITE_ENGINE,  AiEngine.GnuGo)
+        val blackBackend = prefs.getEnum(PrefKeys.BLACK_BACKEND, ComputeBackend.CPU)
+        val whiteBackend = prefs.getEnum(PrefKeys.WHITE_BACKEND, ComputeBackend.CPU)
+        val boardSize    = prefs.getInt(PrefKeys.BOARD_SIZE, 13).coerceIn(9, 19)
+        val handicap     = prefs.getInt(PrefKeys.HANDICAP, 0).coerceIn(0, 9)
+        val blackDiff    = prefs.getInt(PrefKeys.BLACK_DIFFICULTY, 5).coerceIn(1, 10)
+        val whiteDiff    = prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5).coerceIn(1, 10)
+        val gpuTuned     = prefs.getBoolean(PrefKeys.KATAGO_GPU_TUNING_COMPLETED, false)
+
+        val blackName = prefs.getString(PrefKeys.BLACK_NAME, null)
+            ?: defaultName(ctx, blackRole, blackEngine, isBlack = true)
+        val whiteName = prefs.getString(PrefKeys.WHITE_NAME, null)
+            ?: defaultName(ctx, whiteRole, whiteEngine, isBlack = false)
+
         update {
             it.copy(
-                boardSize = savedConfig.boardSize,
-                blackConfig = savedConfig.blackPlayer,
-                whiteConfig = savedConfig.whitePlayer
+                boardSize = boardSize,
+                blackConfig = PlayerConfig(blackRole, blackName, blackEngine, blackDiff, blackBackend),
+                whiteConfig = PlayerConfig(whiteRole, whiteName, whiteEngine, whiteDiff, whiteBackend),
+                gpuTuningCompleted = gpuTuned
             )
         }
-        goGame.reset(savedConfig.boardSize)
-        if (savedConfig.handicap > 0) goGame.setHandicap(savedConfig.handicap)
+        goGame.reset(boardSize)
+        if (handicap > 0) goGame.setHandicap(handicap)
+    }
+
+    private fun defaultName(
+        ctx: android.content.Context,
+        role: PlayerRole,
+        engine: AiEngine,
+        isBlack: Boolean
+    ): String = when (role) {
+        PlayerRole.Human -> ctx.getString(
+            if (isBlack) R.string.default_black_name else R.string.default_white_name
+        )
+        PlayerRole.AI -> ctx.getString(
+            if (engine == AiEngine.GnuGo) R.string.engine_gnugo else R.string.engine_katago
+        )
+    }
+
+    private inline fun <reified T : Enum<T>> android.content.SharedPreferences.getEnum(
+        key: String,
+        default: T
+    ): T {
+        val name = getString(key, null) ?: return default
+        return enumValues<T>().firstOrNull { it.name == name } ?: default
     }
 
     override fun onCleared() {
@@ -418,6 +471,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         onGtp { engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend) }
         onGtp { engineManager.engineInit(boardSize, komi) }
 
+        // Mark GPU tuning as complete after first successful init
+        if (aiPlayer.backend == ComputeBackend.GPU && !currentState().gpuTuningCompleted) {
+            ctx.getSharedPreferences(PrefKeys.NAME, android.content.Context.MODE_PRIVATE)
+                .edit().putBoolean(PrefKeys.KATAGO_GPU_TUNING_COMPLETED, true).apply()
+            update { it.copy(gpuTuningCompleted = true) }
+        }
+
         val stones = goGame.state.value.stones
         for ((pos, color) in stones) {
             val (row, col) = pos
@@ -572,14 +632,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 blackConfig = finalBlack,
                 whiteConfig = finalWhite,
-                showScore = false,
-                currentScore = null,
-                currentEval = null,
                 loadedEngineType = if (parsed.engineTypeName.isNotEmpty())
                     engineTypeFromName(parsed.engineTypeName) else null,
-                loadedAiDifficulty = parsed.aiDifficulty,
-                currentPage = Page.Game
-            )
+                loadedAiDifficulty = parsed.aiDifficulty
+            ).resetToGame()
         }
         toast("${ctx.getString(R.string.toast_loaded, file.name)}")
     }
@@ -614,14 +670,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else if (!goGame.placeStone(row, col)) break
         }
 
-        update {
-            it.copy(
-                showScore = false,
-                currentScore = null,
-                currentEval = null,
-                currentPage = Page.Game
-            )
-        }
+        update { it.resetToGame() }
     }
 
     // ── Engine helpers ──
@@ -670,4 +719,4 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         private const val TAG = "AndroidGo"
     }
-}
+    }

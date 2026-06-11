@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Load release signing credentials from keystore.properties (gitignored)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -10,10 +19,12 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
         }
     }
 
@@ -21,8 +32,8 @@ android {
         applicationId = "org.snailtrail.androidgo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.2"
+        versionCode = 2
+        versionName = "2.0.0"
         buildConfigField("String", "GIT_REVISION", "\"${try { providers.exec { commandLine("git", "rev-parse", "--short", "HEAD"); workingDir = projectDir }.standardOutput.asText.get().trim() } catch (_: Exception) { "unknown" }}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

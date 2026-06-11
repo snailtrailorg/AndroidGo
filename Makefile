@@ -10,12 +10,14 @@
 #   make katago-cpu    Build KataGo CPU (Eigen) engine only
 #   make katago-gpu    Build KataGo GPU (OpenCL) engine only
 #   make model         Deploy selected model to assets/
+#   make bundle        Build release AAB (gradle bundleRelease)
 #   make clean         Remove all build artifacts
 #   make verify        Check all engine .so exports
 
 NDK     ?= $(ANDROID_NDK_HOME)
 GRADLEW := $(CURDIR)/gradlew
 APK     := $(CURDIR)/app/build/outputs/apk/debug/app-debug.apk
+AAB     := $(CURDIR)/app/build/outputs/bundle/release/app-release.aab
 APPID   := org.snailtrail.androidgo
 MAIN    := $(APPID)/.MainActivity
 
@@ -25,7 +27,7 @@ CXX_SO     := $(JNILIBS)/libc++_shared.so
 MODEL_FILE := $(CURDIR)/app/src/main/assets/engine/katago_model.txt.gz
 
 .PHONY: all engines menuconfig model gnugo katago-cpu katago-gpu \
-        clean verify test apk install run guard-assets
+        clean verify test apk install run guard-assets bundle
 
 # ── Top-level targets ─────────────────────────────────────────────
 
@@ -54,6 +56,9 @@ model:
 
 apk: guard-assets
 	@$(GRADLEW) assembleDebug
+
+bundle: guard-assets
+	@$(GRADLEW) bundleRelease
 
 guard-assets:
 	@missing=""; \

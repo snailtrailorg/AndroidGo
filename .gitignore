@@ -20,3 +20,4 @@ app/src/main/jniLibs/arm64-v8a/libkatago_gpu.so
 jni/gnugo/config.log
 .kotlin/
 __pycache__/
+keystore.properties
