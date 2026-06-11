@@ -293,7 +293,12 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
                 }
                 Row(modifier = Modifier.padding(top = 4.dp)) {
                     Text(stringResource(R.string.about_privacy) + "  ", fontSize = 13.sp)
-                    Text("androidgo.snailtrail.org/privacy/", fontSize = 13.sp,
+                    Text(stringResource(R.string.about_privacy_url), fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+                Row {
+                    Text(stringResource(R.string.about_source_code) + "  ", fontSize = 13.sp)
+                    Text(stringResource(R.string.about_source_code_url), fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary)
                 }
                 Text(stringResource(R.string.about_powered_by), fontSize = 13.sp)
