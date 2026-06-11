@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -108,26 +107,31 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .statusBarsPadding()
         ) {
             // Title bar — history specific
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    painterResource(R.drawable.ic_app_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).padding(start = 4.dp),
+                    tint = Color.Unspecified
+                )
                 Text(
                     stringResource(R.string.history_title),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
-                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.history_back),
-                        modifier = Modifier.size(24.dp))
+                        modifier = Modifier.size(30.dp))
                 }
             }
 
@@ -261,34 +265,39 @@ fun ReviewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .statusBarsPadding()
         ) {
             // Title bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 2.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    painterResource(R.drawable.ic_app_icon),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).padding(start = 4.dp),
+                    tint = Color.Unspecified
+                )
                 Text(
                     stringResource(R.string.review_title),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
-                IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+                IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.review_back),
-                        modifier = Modifier.size(24.dp))
+                        modifier = Modifier.size(30.dp))
                 }
                 IconButton(onClick = {
                     onIndexChange(displayIndex)
                     onLoad()
-                }, modifier = Modifier.size(40.dp)) {
+                }, modifier = Modifier.size(36.dp)) {
                     Icon(painterResource(R.drawable.ic_load),
                         contentDescription = stringResource(R.string.review_load),
-                        modifier = Modifier.size(24.dp))
+                        modifier = Modifier.size(30.dp))
                 }
             }
 

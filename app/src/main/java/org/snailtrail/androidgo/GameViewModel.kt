@@ -618,11 +618,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         engineManager.setHandicap(parsed.handicap)
                     }
                     for (move in goGame.state.value.moveHistory) {
-                        if (!move.isPass) {
-                            engineManager.playMove(
-                                move.stone.row, move.stone.col,
-                                move.stone.color == StoneColor.Black)
-                        }
+                        engineManager.playMove(
+                            move.stone.row, move.stone.col,
+                            move.stone.color == StoneColor.Black)
                     }
                 }
             } catch (_: Exception) { /* scoring will return empty on engine failure */ }

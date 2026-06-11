@@ -17,8 +17,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -247,6 +250,15 @@ fun AboutDialog(onDismiss: () -> Unit, modelName: String = "") {
         title = { Text(stringResource(R.string.about_title), fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(
+                    painterResource(R.drawable.ic_app_icon),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .padding(bottom = 8.dp)
+                        .align(Alignment.CenterHorizontally),
+                    tint = Color.Unspecified
+                )
                 Text(stringResource(R.string.about_desc), fontSize = 13.sp)
                 Text(stringResource(R.string.about_version, version, revision), fontSize = 13.sp)
                 Text(

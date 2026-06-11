@@ -22,6 +22,35 @@ v<主版本>.<次版本>.<修订>
 
 ---
 
+## v2.0.0 (2026-06-11)
+
+Google Play 发布准备 + 首次用户体验全面优化。
+
+### 新增
+- **AAB 构建**: `make bundle` 输出 release AAB，支持 Google Play 上传
+- **Release 签名**: RSA 2048 密钥，`keystore.properties` 管理密码
+- **首次运行菜单指引**: coach mark 卡片，5 步依次介绍标题栏按钮，带箭头指向 + Skip/上一步/下一步
+- **GPU 调优提示**: 首次启动 GPU 引擎时提示用户等待 1-5 分钟，后续快速启动
+- **KataGo 速度警告**: 选 KataGo 引擎时显示橙色提示（20-300 秒/步），自动滚到可见
+- **App 图标**: 棋盘木色底 + 黑白棋子，标题栏和 About 对话框展示
+- **About 对话框改进**: 引擎列表缩进加 bullet，新增图标
+
+### 修复
+- **初次安装名字为空**: ViewModel 统一从 prefs 解析参数，补 i18n 默认名
+- **终局加载无法数子**: 两连 pass 同步到引擎 + busyState 状态重置
+- **布局满屏**: 删除双重 statusBarsPadding
+
+### 优化
+- **标题栏**: 图标 30dp，容器 36dp，三页面统一
+- **健康检查 12 项全部绿灯**: 新增加状态归属与分层内聚检查
+- 废弃 mipmap webp 图清理
+
+### 架构
+- `UiState.resetToGame()`: 数据拥有自己的状态变换
+- `vm.init()`: 统一解析 prefs，消除 loadConfigFromPrefs 中间层
+
+---
+
 ## v1.0.2 (2026-06-10)
 
 代码健康检查 + 修复 18 项问题。
