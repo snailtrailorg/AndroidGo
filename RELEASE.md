@@ -38,7 +38,7 @@ Google Play 发布准备 + 首次用户体验全面优化。
 ### 修复
 - **初次安装名字为空**: ViewModel 统一从 prefs 解析参数，补 i18n 默认名
 - **终局加载无法数子**: 两连 pass 同步到引擎 + busyState 状态重置
-- **复盘加载无法数子**: `loadFromReview` 补引擎同步，与 `loadSgf` 统一走 `syncEngineToBoard`
+- **复盘加载无法数子**: `loadFromReview` 补引擎同步，提取 `syncEngineToBoard()` 统一入口
 - **布局满屏**: 删除双重 statusBarsPadding
 
 ### 优化
