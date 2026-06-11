@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -76,6 +77,8 @@ fun HistoryScreen(
     onDelete: (File) -> Unit,
     onBack: () -> Unit
 ) {
+    BackHandler(onBack = onBack)
+
     var refreshKey by remember { mutableIntStateOf(0) }
     val entries = remember(refreshKey) {
         val list = mutableListOf<SgfEntry>()
@@ -216,6 +219,8 @@ fun ReviewScreen(
     onBack: () -> Unit,
     onLoad: () -> Unit
 ) {
+    BackHandler(onBack = onBack)
+
     val game = remember {
         val g = GoGame(boardSize)
         g.setKomi(komi)
@@ -342,18 +347,18 @@ fun ReviewScreen(
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("⏮", fontSize = 16.sp) }
+            ) { Text("|<<", fontSize = 14.sp) }
             Button(
                 onClick = { displayIndex = (displayIndex - 1).coerceAtLeast(0) },
                 enabled = displayIndex > 0,
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("◀", fontSize = 16.sp) }
+            ) { Text("<<", fontSize = 14.sp) }
             Text(
                 stringResource(R.string.review_move, displayIndex, moves.size),
                 fontSize = 15.sp,
-                modifier = Modifier.padding(horizontal = 12.dp)
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
             Button(
                 onClick = { displayIndex = (displayIndex + 1).coerceAtMost(moves.size) },
@@ -361,14 +366,14 @@ fun ReviewScreen(
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("▶", fontSize = 16.sp) }
+            ) { Text(">>", fontSize = 14.sp) }
             Button(
                 onClick = { displayIndex = moves.size },
                 enabled = displayIndex < moves.size,
                 modifier = Modifier.weight(1f).defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 colors = navButtonColors
-            ) { Text("⏭", fontSize = 16.sp) }
+            ) { Text(">>|", fontSize = 14.sp) }
             }
         } // Column
     } // Scaffold
