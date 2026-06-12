@@ -28,10 +28,6 @@ fun gtpToBoardPos(coord: String, boardSize: Int): Pair<Int, Int> {
     if (cleaned.isEmpty() || cleaned == "PASS" || cleaned == "RESIGN" || cleaned == "TT")
         return -1 to -1
     if (cleaned.length < 2) return -1 to -1
-    // Handle SGF two-letter format (e.g. "DD", "KJ")
-    if (cleaned.length == 2 && cleaned[1].isLetter()) {
-        return sgfToBoardPos(cleaned, boardSize)
-    }
     var col = cleaned[0] - 'A'
     if (col >= 8) col-- // skip I
     val rowStr = cleaned.substring(1)

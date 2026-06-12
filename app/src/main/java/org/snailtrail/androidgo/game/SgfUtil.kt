@@ -101,7 +101,7 @@ object SgfUtil {
                         result.aiDifficulty = parts.getOrNull(offset + 1)?.toIntOrNull() ?: 5
                     }
                     "AB" -> value.split(",").forEach { coord ->
-                        gtpToBoardPos(coord.trim(), result.boardSize)?.let { result.handicapStones.add(it) }
+                        sgfToBoardPos(coord.trim(), result.boardSize)?.let { result.handicapStones.add(it) }
                     }
                 }
             }
@@ -120,7 +120,7 @@ object SgfUtil {
             if (isPass) {
                 result.moves.add(-1 to -1)
             } else {
-                val pos = gtpToBoardPos(moveVal, result.boardSize)
+                val pos = sgfToBoardPos(moveVal, result.boardSize)
                 if (pos.first >= 0) result.moves.add(pos)
             }
             blackTurn = !blackTurn
