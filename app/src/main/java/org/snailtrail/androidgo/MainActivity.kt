@@ -1,10 +1,14 @@
 package org.snailtrail.androidgo
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -134,11 +138,60 @@ fun AndroidGoScreen(
             GamePage(state, vm, boardState)
         }
         Page.History -> {
+            val ctx = LocalContext.current
+            val sgfDir = File(ctx.filesDir, "sgf")
+            val importLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenMultipleDocuments()
+            ) { uris ->
+                sgfDir.mkdirs()
+                var imported = 0
+                for (uri in uris) {
+                    try {
+                        val name = uri.lastPathSegment ?: "imported_${System.currentTimeMillis()}.sgf"
+                        val dest = File(sgfDir, name)
+                        // Resolve name conflict
+                        var finalFile = dest
+                        var seq = 1
+                        while (finalFile.exists()) {
+                            val base = name.removeSuffix(".sgf").removeSuffix(".SGF")
+                            finalFile = File(sgfDir, "${base}_$seq.sgf")
+                            seq++
+                        }
+                        ctx.contentResolver.openInputStream(uri)?.use { input ->
+                            finalFile.outputStream().use { output -> input.copyTo(output) }
+                        }
+                        if (SgfUtil.parseFromFile(finalFile) != null) {
+                            imported++
+                        } else {
+                            finalFile.delete()
+                        }
+                    } catch (_: Exception) { /* skip failed files */ }
+                }
+                if (imported > 0) {
+                    Toast.makeText(ctx, ctx.getString(R.string.toast_imported, imported), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(ctx, ctx.getString(R.string.toast_import_failed), Toast.LENGTH_SHORT).show()
+                }
+            }
             HistoryScreen(
-                sgfDir = File(LocalContext.current.filesDir, "sgf"),
+                sgfDir = sgfDir,
                 onLoad = { parsed, file -> vm.onEvent(GameEvent.LoadSgf(parsed, file)) },
                 onReview = { parsed -> vm.onEvent(GameEvent.ReviewSgf(parsed)) },
                 onDelete = { file -> file.delete() },
+                onShare = { file ->
+                    if (!file.exists()) {
+                        Toast.makeText(ctx, ctx.getString(R.string.toast_file_not_found), Toast.LENGTH_SHORT).show()
+                        return@HistoryScreen
+                    }
+                    val uri = FileProvider.getUriForFile(ctx, "${ctx.packageName}.fileprovider", file)
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/x-go-sgf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    ctx.startActivity(Intent.createChooser(intent, ctx.getString(R.string.history_share)))
+                },
+                onImport = { importLauncher.launch(arrayOf("application/x-go-sgf", "text/plain")) },
                 onBack = { vm.onEvent(GameEvent.GoToGame) }
             )
         }

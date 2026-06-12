@@ -75,6 +75,8 @@ fun HistoryScreen(
     onLoad: (ParsedSgf, File) -> Unit,
     onReview: (ParsedSgf) -> Unit,
     onDelete: (File) -> Unit,
+    onShare: (File) -> Unit,
+    onImport: () -> Unit,
     onBack: () -> Unit
 ) {
     BackHandler(onBack = onBack)
@@ -131,6 +133,11 @@ fun HistoryScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
+                IconButton(onClick = onImport, modifier = Modifier.size(36.dp)) {
+                    Icon(painterResource(R.drawable.ic_import),
+                        contentDescription = stringResource(R.string.history_import),
+                        modifier = Modifier.size(30.dp))
+                }
                 IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.history_back),
@@ -187,6 +194,11 @@ fun HistoryScreen(
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                         modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
                                         Text(stringResource(R.string.history_review), fontSize = 12.sp)
+                                    }
+                                    Button(onClick = { onShare(entry.file) },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp)) {
+                                        Text(stringResource(R.string.history_share), fontSize = 12.sp)
                                     }
                                     Button(onClick = { onDelete(entry.file); refreshKey++ },
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),

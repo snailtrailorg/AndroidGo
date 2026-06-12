@@ -16,12 +16,12 @@ object SgfUtil {
         if (blackName.isNotEmpty()) sb.append("PB[$blackName]\n")
         if (whiteName.isNotEmpty()) sb.append("PW[$whiteName]\n")
         sb.append("SZ[${state.size}]KM[${state.komi}]HA[${state.handicap}]\n")
-        if (engineType.isNotEmpty()) sb.append("AE[$engineType:$difficulty]\n")
+        if (engineType.isNotEmpty()) sb.append("GC[AndroidGo:$engineType:$difficulty]\n")
         sb.append("DT[${dateFormat.format(Date())}]\n")
 
         if (state.handicap > 0) {
             for (pos in computeHandicapPositions(state.size, state.handicap)) {
-                sb.append("AB[${boardPosToGtp(pos.first, pos.second, state.size)}]")
+                sb.append("AB[${boardPosToSgf(pos.first, pos.second, state.size)}]")
             }
             sb.append("\n")
         }
@@ -32,14 +32,14 @@ object SgfUtil {
             if (move.isPass) {
                 sb.append(";${color}[]\n")
             } else if (move.capturedStones.isNotEmpty()) {
-                sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]")
+                sb.append(";${color}[${boardPosToSgf(move.stone.row, move.stone.col, state.size)}]")
                 val caps = move.capturedStones.joinToString(",") {
-                    boardPosToGtp(it.row, it.col, state.size)
+                    boardPosToSgf(it.row, it.col, state.size)
                 }
                 if (caps.isNotEmpty()) sb.append("C[captured: $caps]")
                 sb.append("\n")
             } else {
-                sb.append(";${color}[${boardPosToGtp(move.stone.row, move.stone.col, state.size)}]\n")
+                sb.append(";${color}[${boardPosToSgf(move.stone.row, move.stone.col, state.size)}]\n")
             }
             blackTurn = !blackTurn
         }
@@ -93,10 +93,12 @@ object SgfUtil {
                     "HA" -> result.handicap = value.toIntOrNull() ?: 0
                     "PB" -> result.blackName = value
                     "PW" -> result.whiteName = value
-                    "AE" -> {
+                    "AE", "GC" -> {
                         val parts = value.split(":")
-                        result.engineTypeName = parts[0]
-                        result.aiDifficulty = parts.getOrNull(1)?.toIntOrNull() ?: 5
+                        // GC format: "AndroidGo:engine:diff" or legacy AE format: "engine:diff"
+                        val offset = if (key == "GC" && parts.size >= 3) 1 else 0
+                        result.engineTypeName = parts.getOrNull(offset) ?: ""
+                        result.aiDifficulty = parts.getOrNull(offset + 1)?.toIntOrNull() ?: 5
                     }
                     "AB" -> value.split(",").forEach { coord ->
                         gtpToBoardPos(coord.trim(), result.boardSize)?.let { result.handicapStones.add(it) }
