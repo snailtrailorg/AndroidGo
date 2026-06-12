@@ -34,7 +34,6 @@ fun GameInfoBar(
     currentPlayer: StoneColor,
     moveCount: Int,
     gameOver: Boolean,
-    aiThinking: Boolean,
     onLayout: ((Float) -> Unit)? = null
 ) {
     val isBlackTurn = currentPlayer == StoneColor.Black && !gameOver

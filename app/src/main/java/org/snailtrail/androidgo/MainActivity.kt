@@ -32,6 +32,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
@@ -92,7 +95,7 @@ fun AndroidGoScreen(
     // End-game auto-scoring
     val boardState by vm.goGame.state.collectAsState()
     LaunchedEffect(boardState.gameOver) {
-        if (boardState.gameOver && !boardLocked(state)) {
+        if (boardState.gameOver) {
             vm.updateScoreFromDeadStones()
         }
     }
@@ -126,15 +129,9 @@ fun AndroidGoScreen(
         }
     }
 
-    val aiActive = state.blackConfig.role == PlayerRole.AI || state.whiteConfig.role == PlayerRole.AI
-    val isAiTurn = aiActive && (
-        (boardState.currentPlayer == StoneColor.Black && state.blackConfig.role == PlayerRole.AI) ||
-        (boardState.currentPlayer == StoneColor.White && state.whiteConfig.role == PlayerRole.AI)
-    )
-
     when (state.currentPage) {
         Page.Game -> {
-            GamePage(state, vm, boardState, isAiTurn)
+            GamePage(state, vm, boardState)
         }
         Page.History -> {
             HistoryScreen(
@@ -180,9 +177,7 @@ fun AndroidGoScreen(
     state: UiState,
     vm: GameViewModel,
     boardState: org.snailtrail.androidgo.game.BoardState,
-    isAiTurn: Boolean
 ) {
-    val busy = state.busyState
     val ctx = LocalContext.current
     val prefs = remember { ctx.getSharedPreferences(PrefKeys.NAME, android.content.Context.MODE_PRIVATE) }
     val firstRunPref = remember { prefs.getBoolean(PrefKeys.FIRST_RUN_COMPLETED, false) }
@@ -204,8 +199,6 @@ fun AndroidGoScreen(
                     onMenuSave = { vm.onEvent(GameEvent.SaveSgf) },
                     onMenuHistory = { vm.onEvent(GameEvent.GoToHistory) },
                     onMenuAbout = { vm.onEvent(GameEvent.ShowAbout) },
-                    aiThinking = busy == AppBusyState.AiThinking,
-                    engineInitializing = busy == AppBusyState.Initializing,
                     onButtonLayout = { key, layout ->
                         buttonLayouts = buttonLayouts + (key to layout)
                     }
@@ -219,7 +212,6 @@ fun AndroidGoScreen(
                 currentPlayer = boardState.currentPlayer,
                 moveCount = boardState.moveHistory.size,
                 gameOver = boardState.gameOver,
-                aiThinking = busy == AppBusyState.AiThinking,
                 onLayout = { infoBarBottom = it }
             )
 
@@ -238,41 +230,6 @@ fun AndroidGoScreen(
                     },
                     showMoveNumbers = state.showMoveNumbers
                 )
-
-                // Unified busy overlay: blocks input during Initializing / AiThinking / Evaluating
-                if (busy == AppBusyState.Initializing || busy == AppBusyState.AiThinking || busy == AppBusyState.Evaluating) {
-                    val isGpuTuning = busy == AppBusyState.Initializing &&
-                        !state.gpuTuningCompleted &&
-                        (state.blackConfig.backend == ComputeBackend.GPU ||
-                         state.whiteConfig.backend == ComputeBackend.GPU)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .background(Color.Black.copy(alpha = 0.25f))
-                            .pointerInput(busy) { /* consume all touches */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = stringResource(
-                                    when {
-                                        isGpuTuning -> R.string.engine_starting_gpu_tuning
-                                        busy == AppBusyState.Initializing -> R.string.engine_starting
-                                        busy == AppBusyState.AiThinking -> R.string.ai_thinking
-                                        else -> R.string.btn_score  /* Evaluating */
-                                    }
-                                ),
-                                color = Color.White, fontSize = 14.sp,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-                    }
-                }
             }
 
             // Score card: result card when done
@@ -293,12 +250,9 @@ fun AndroidGoScreen(
 
             BottomBar(
                 gameOver = boardState.gameOver,
-                aiThinking = busy == AppBusyState.AiThinking,
-                engineInitializing = busy == AppBusyState.Initializing,
                 hasMoves = boardState.moveHistory.isNotEmpty(),
                 showMoveNumbers = state.showMoveNumbers,
                 showScore = state.showScore,
-                scoringInFlight = busy == AppBusyState.Evaluating,
                 onPass = { vm.onEvent(GameEvent.Pass) },
                 onUndo = { vm.onEvent(GameEvent.Undo) },
                 onToggleMoveNumbers = { vm.onEvent(GameEvent.ToggleMoveNumbers) },
@@ -307,6 +261,35 @@ fun AndroidGoScreen(
             )
         }
     } // Scaffold
+
+    // Full-screen busy overlay: blocks all input during non-idle states
+    val busy = state.busyState
+    if (busy == AppBusyState.Initializing || busy == AppBusyState.AiThinking || busy == AppBusyState.Evaluating) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.25f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { /* consume clicks */ },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (state.busyMessage.isNotEmpty()) {
+                    Text(
+                        text = state.busyMessage,
+                        color = Color.White, fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
+    }
 
     // First-run step-by-step guide overlay
     if (showFirstRunGuide) {
@@ -332,8 +315,3 @@ fun AndroidGoScreen(
     } // Box
 }
 
-private fun boardLocked(state: UiState): Boolean {
-    val b = state.busyState
-    return b == AppBusyState.AiThinking || b == AppBusyState.Initializing ||
-           b == AppBusyState.Evaluating || state.showScore
-}

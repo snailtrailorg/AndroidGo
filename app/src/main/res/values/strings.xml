@@ -24,6 +24,7 @@
     <string name="btn_score">Count</string>
     <string name="btn_continue">Back</string>
     <string name="btn_end">End</string>
+    <string name="evaluating">Scoring…</string>
 
     <!-- Score Card -->
     <string name="score_black">B %1$s: %2$d stones + %3$d area = %4$s</string>
@@ -107,7 +108,10 @@
     <string name="toast_save_failed">Save failed: %1$s</string>
     <string name="toast_ai_error">AI error: %1$s</string>
     <string name="engine_starting">Engine starting…</string>
+    <string name="loading_game">Loading game…</string>
     <string name="toast_ai_start_failed">AI engine start failed: %1$s</string>
+    <string name="toast_load_complete">Game loaded</string>
+    <string name="toast_gpu_tuning_complete">GPU tuning complete</string>
     <string name="toast_ai_not_ready">AI engine not ready</string>
 
     <!-- End Game Dialog -->

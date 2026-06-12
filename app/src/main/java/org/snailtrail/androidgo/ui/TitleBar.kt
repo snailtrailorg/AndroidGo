@@ -37,8 +37,6 @@ fun TitleBar(
     onMenuSave: () -> Unit,
     onMenuHistory: () -> Unit,
     onMenuAbout: () -> Unit,
-    aiThinking: Boolean = false,
-    engineInitializing: Boolean = false,
     onButtonLayout: ((String, ButtonLayout) -> Unit)? = null
 ) {
     // Helper: track layout of a button
@@ -64,11 +62,9 @@ fun TitleBar(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f).padding(start = 4.dp)
         )
-        val menuEnabled = !aiThinking && !engineInitializing
         IconButton(
             onClick = onMenuNewGame,
-            modifier = Modifier.size(36.dp).trackButton("new_game"),
-            enabled = menuEnabled
+            modifier = Modifier.size(36.dp).trackButton("new_game")
         ) {
             Icon(painterResource(R.drawable.ic_new_game),
                 contentDescription = stringResource(R.string.menu_new_game),
@@ -77,7 +73,6 @@ fun TitleBar(
         IconButton(
             onClick = onMenuSettings,
             modifier = Modifier.size(36.dp).trackButton("settings"),
-            enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_settings),
                 contentDescription = stringResource(R.string.menu_settings),
@@ -86,7 +81,6 @@ fun TitleBar(
         IconButton(
             onClick = onMenuSave,
             modifier = Modifier.size(36.dp).trackButton("save"),
-            enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_save),
                 contentDescription = stringResource(R.string.menu_save),
@@ -95,7 +89,6 @@ fun TitleBar(
         IconButton(
             onClick = onMenuHistory,
             modifier = Modifier.size(36.dp).trackButton("history"),
-            enabled = menuEnabled
         ) {
             Icon(painterResource(R.drawable.ic_history),
                 contentDescription = stringResource(R.string.menu_history),

@@ -315,7 +315,6 @@ fun ReviewScreen(
                 currentPlayer = currentColor,
                 moveCount = displayIndex,
                 gameOver = isEnd,
-                aiThinking = false
             )
 
             // Board — centered vertically, same as main screen

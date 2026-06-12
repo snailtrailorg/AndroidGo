@@ -44,6 +44,7 @@ data class UiState(
     val blackConfig: PlayerConfig = PlayerConfig(),
     val whiteConfig: PlayerConfig = PlayerConfig(role = PlayerRole.AI, engine = AiEngine.GnuGo),
     val busyState: AppBusyState = AppBusyState.Idle,
+    val busyMessage: String = "",
     val showScore: Boolean = false,
     val showMoveNumbers: Boolean = false,
     val currentEval: EvalResult? = null,
@@ -67,6 +68,8 @@ data class UiState(
     val reviewSize: Int = 19,
     val reviewKomi: Float = 3.75f,
     val reviewHandicap: Int = 0,
+    val reviewEngineTypeName: String = "",
+    val reviewAiDifficulty: Int = 5,
 
     // Toast
     val toastMessage: String? = null
@@ -74,6 +77,7 @@ data class UiState(
     /** Clean reset for loading a game from history or review. */
     fun resetToGame(): UiState = copy(
         busyState = AppBusyState.Idle,
+        busyMessage = "",
         showScore = false,
         currentScore = null,
         currentEval = null,
@@ -277,21 +281,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Start a new game with current settings without showing the dialog. */
     fun quickNewGame() {
-        val st = currentState()
+        val prefs = getApplication<Application>()
+            .getSharedPreferences(PrefKeys.NAME, android.content.Context.MODE_PRIVATE)
         startNewGame(NewGameConfig(
-            boardSize = st.boardSize,
-            handicap = goGame.state.value.handicap,
-            blackPlayer = st.blackConfig,
-            whitePlayer = st.whiteConfig
+            boardSize = prefs.getInt(PrefKeys.BOARD_SIZE, 13).coerceIn(9, 19),
+            handicap = prefs.getInt(PrefKeys.HANDICAP, 0).coerceIn(0, 9),
+            blackPlayer = PlayerConfig(
+                role = prefs.getEnum(PrefKeys.BLACK_ROLE, PlayerRole.Human),
+                name = prefs.getString(PrefKeys.BLACK_NAME, null) ?: "",
+                engine = prefs.getEnum(PrefKeys.BLACK_ENGINE, AiEngine.GnuGo),
+                difficulty = prefs.getInt(PrefKeys.BLACK_DIFFICULTY, 5).coerceIn(1, 10),
+                backend = prefs.getEnum(PrefKeys.BLACK_BACKEND, ComputeBackend.CPU)
+            ),
+            whitePlayer = PlayerConfig(
+                role = prefs.getEnum(PrefKeys.WHITE_ROLE, PlayerRole.AI),
+                name = prefs.getString(PrefKeys.WHITE_NAME, null) ?: "",
+                engine = prefs.getEnum(PrefKeys.WHITE_ENGINE, AiEngine.GnuGo),
+                difficulty = prefs.getInt(PrefKeys.WHITE_DIFFICULTY, 5).coerceIn(1, 10),
+                backend = prefs.getEnum(PrefKeys.WHITE_BACKEND, ComputeBackend.CPU)
+            )
         ))
     }
 
     fun updateScoreFromDeadStones() {
-        update { it.copy(showScore = true, currentScore = null, currentEval = null, busyState = AppBusyState.Evaluating) }
+        if (currentState().busyState != AppBusyState.Idle) return
+        update { it.copy(showScore = true, currentScore = null, currentEval = null, busyState = AppBusyState.Evaluating, busyMessage = ctx.getString(R.string.evaluating)) }
         viewModelScope.launch {
             val dead = onGtp { getDeadStonesForScoring(boardState) }
             val score = goGame.countTerritory(dead)
-            update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore) }
+            update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore, busyMessage = "") }
         }
     }
 
@@ -303,11 +321,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         update { it.copy(toastMessage = msg) }
     }
 
-    // ── Board input guard ──
-    private fun boardLocked(): Boolean {
-        val b = currentState().busyState
-        return b == AppBusyState.AiThinking || b == AppBusyState.Initializing ||
-               b == AppBusyState.Evaluating || currentState().showScore
+    // ── Click ──
+    private fun handleClick(row: Int, col: Int) {
+        if (boardState.gameOver) return
+
+        val moveOk = goGame.placeStone(row, col)
+        if (moveOk && !goGame.state.value.gameOver) {
+            triggerAiMove()
+        }
     }
 
     private fun isAiTurn(): Boolean {
@@ -317,18 +338,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return when (boardState.currentPlayer) {
             StoneColor.Black -> st.blackConfig.role == PlayerRole.AI
             StoneColor.White -> st.whiteConfig.role == PlayerRole.AI
-        }
-    }
-
-    // ── Click ──
-    private fun handleClick(row: Int, col: Int) {
-        if (boardLocked()) return
-        if (boardState.gameOver) return
-        if (isAiTurn()) return
-
-        val moveOk = goGame.placeStone(row, col)
-        if (moveOk && !goGame.state.value.gameOver) {
-            triggerAiMove()
         }
     }
 
@@ -362,9 +371,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 aiEngineReady.set(false)
             } else {
                 goGame.undo()
+                // Keep engine in sync after single human undo
+                viewModelScope.launch { onGtp { engineManager.undo() } }
             }
         } else {
             goGame.undo()
+            // Human-vs-human also needs engine in sync
+            viewModelScope.launch { onGtp { engineManager.undo() } }
         }
     }
 
@@ -372,30 +385,30 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun onScore() {
         val st = currentState()
         if (st.showScore) {
-            update { it.copy(showScore = false, currentScore = null, currentEval = null, busyState = AppBusyState.Idle) }
+            update { it.copy(showScore = false, currentScore = null, currentEval = null, busyState = AppBusyState.Idle, busyMessage = "") }
             return
         }
         if (st.busyState != AppBusyState.Idle) return
 
-        update { it.copy(showScore = true, currentScore = null, currentEval = null, busyState = AppBusyState.Evaluating) }
+        update { it.copy(showScore = true, currentScore = null, currentEval = null, busyState = AppBusyState.Evaluating, busyMessage = ctx.getString(R.string.evaluating)) }
 
         viewModelScope.launch {
             if (boardState.gameOver) {
                 // Endgame: traditional territory scoring with dead stone detection
                 val dead = onGtp { getDeadStonesForScoring(boardState) }
                 val score = goGame.countTerritory(dead)
-                update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore) }
+                update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore, busyMessage = "") }
             } else {
                 // Midgame: try KataGo neural net evaluation first,
                 // fall back to traditional dead stone scoring for GNU Go
                 val raw = onGtp { engineManager.analyze(100) }
                 val result = parseAnalysis(raw, boardState.size, boardState.currentPlayer)
                 if (result != null) {
-                    update { it.copy(currentEval = result, busyState = AppBusyState.ShowingScore) }
+                    update { it.copy(currentEval = result, busyState = AppBusyState.ShowingScore, busyMessage = "") }
                 } else {
                     val dead = onGtp { getDeadStonesForScoring(boardState) }
                     val score = goGame.countTerritory(dead)
-                    update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore) }
+                    update { it.copy(currentScore = score, busyState = AppBusyState.ShowingScore, busyMessage = "") }
                 }
             }
         }
@@ -403,9 +416,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // ── End (two passes) ──
     private fun onEnd() {
+        val firstPassGameOver = goGame.state.value.gameOver
         goGame.pass()
         if (!goGame.state.value.gameOver) {
             goGame.pass()
+        }
+        // Sync pass moves to engine so dead-stone scoring is accurate
+        viewModelScope.launch {
+            onGtp { engineManager.playMove(-1, -1, true) }
+            if (!firstPassGameOver) {
+                onGtp { engineManager.playMove(-1, -1, false) }
+            }
         }
     }
 
@@ -417,6 +438,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 blackConfig = config.blackPlayer,
                 whiteConfig = config.whitePlayer,
                 busyState = AppBusyState.Initializing,
+                busyMessage = ctx.getString(
+                    if (!currentState().gpuTuningCompleted && (config.blackPlayer.backend == ComputeBackend.GPU || config.whitePlayer.backend == ComputeBackend.GPU))
+                        R.string.engine_starting_gpu_tuning
+                    else R.string.engine_starting
+                ),
                 showNewGameDialog = false,
                 showScore = false,
                 currentScore = null,
@@ -431,7 +457,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val aiActive = config.blackPlayer.role == PlayerRole.AI || config.whitePlayer.role == PlayerRole.AI
         if (!aiActive) {
-            update { it.copy(busyState = AppBusyState.Idle) }
+            update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
             return
         }
 
@@ -442,7 +468,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
                 initAiEngine(aiPlayer, config.boardSize, engKomi)
 
-                update { it.copy(busyState = AppBusyState.Idle) }
+                if (aiPlayer.backend == ComputeBackend.GPU && !currentState().gpuTuningCompleted) {
+                    toast("${ctx.getString(R.string.toast_gpu_tuning_complete)}")
+                }
+                update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
 
                 val st = goGame.state.value
                 val aiFirst = (st.currentPlayer == StoneColor.Black && config.blackPlayer.role == PlayerRole.AI)
@@ -450,7 +479,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 if (aiFirst) triggerAiMove()
             } catch (e: Exception) {
                 Log.e(TAG, "Engine start failed", e)
-                update { it.copy(busyState = AppBusyState.Idle) }
+                update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
                 toast("${ctx.getString(R.string.toast_ai_start_failed, e.message ?: "")}")
             }
         }
@@ -499,7 +528,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (!aiTurn) return
         if (!aiMoveInFlight.compareAndSet(false, true)) return
 
-        update { it.copy(busyState = AppBusyState.AiThinking) }
+        update { it.copy(busyState = AppBusyState.AiThinking, busyMessage = ctx.getString(R.string.ai_thinking)) }
 
         viewModelScope.launch {
             try {
@@ -550,7 +579,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 onGtp { engineManager.close() }
                 aiEngineReady.set(false)
             } finally {
-                update { it.copy(busyState = AppBusyState.Idle) }
+                update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
                 aiMoveInFlight.set(false)
                 // If AI's move ended the game, trigger scoring now that busyState is clear
                 if (goGame.state.value.gameOver) {
@@ -579,6 +608,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── Load SGF ──
+    // lock → await sync → unlock → maybe trigger AI
     private fun loadSgf(parsed: ParsedSgf, file: File) {
         aiEngineReady.set(false)
         engineManager.close()
@@ -608,23 +638,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else if (!goGame.placeStone(row, col)) break
         }
 
-        // Restart engine with the loaded board state so dead-stone
-        // scoring works immediately (GNU Go needs final_status_list dead,
-        // KataGo needs analyze).
-        val et = if (parsed.engineTypeName.isNotEmpty())
-            engineTypeFromName(parsed.engineTypeName) else EngineType.KataGoCPU
-        viewModelScope.launch {
-            syncEngineToBoard(et, parsed.aiDifficulty, parsed.boardSize, parsed.komi, parsed.handicap)
-        }
-
+        // 1. lock UI — also switch to Game page so the overlay is visible
         update {
             it.copy(
                 blackConfig = finalBlack,
                 whiteConfig = finalWhite,
+                busyState = AppBusyState.Initializing,
+                busyMessage = ctx.getString(R.string.loading_game),
+                currentPage = Page.Game,
                 loadedEngineType = if (parsed.engineTypeName.isNotEmpty())
                     engineTypeFromName(parsed.engineTypeName) else null,
                 loadedAiDifficulty = parsed.aiDifficulty
-            ).resetToGame()
+            )
+        }
+
+        // 2. await engine sync, 3. unlock, 4. trigger AI if needed
+        val et = if (parsed.engineTypeName.isNotEmpty())
+            engineTypeFromName(parsed.engineTypeName) else EngineType.KataGoCPU
+        viewModelScope.launch {
+            try {
+                syncEngineToBoard(et, parsed.aiDifficulty, parsed.boardSize, parsed.komi, parsed.handicap)
+                update { it.resetToGame() }
+                toast("${ctx.getString(R.string.toast_load_complete)}")
+                if (!goGame.state.value.gameOver && isAiTurn()) triggerAiMove()
+            } catch (e: Exception) {
+                update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
+                toast("${ctx.getString(R.string.toast_ai_start_failed, e.message ?: "")}")
+            }
         }
         toast("${ctx.getString(R.string.toast_loaded, file.name)}")
     }
@@ -639,6 +679,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 reviewKomi = parsed.komi,
                 reviewHandicap = parsed.handicap,
                 reviewIndex = if (parsed.moves.isEmpty()) 0 else parsed.moves.size,
+                reviewEngineTypeName = parsed.engineTypeName,
+                reviewAiDifficulty = parsed.aiDifficulty,
                 blackConfig = if (parsed.blackName.isNotEmpty()) st.blackConfig.copy(name = parsed.blackName) else st.blackConfig,
                 whiteConfig = if (parsed.whiteName.isNotEmpty()) st.whiteConfig.copy(name = parsed.whiteName) else st.whiteConfig,
                 currentPage = Page.Review
@@ -647,6 +689,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ── Load from review ──
+    // lock → await sync → unlock → maybe trigger AI
     private fun loadFromReview() {
         val st = currentState()
         aiEngineReady.set(false)
@@ -660,11 +703,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else if (!goGame.placeStone(row, col)) break
         }
 
-        viewModelScope.launch {
-            syncEngineToBoard(EngineType.KataGoCPU, 5, st.reviewSize, st.reviewKomi, st.reviewHandicap)
-        }
+        // 1. lock UI — also switch to Game page so the overlay is visible
+        update { it.copy(busyState = AppBusyState.Initializing, busyMessage = ctx.getString(R.string.loading_game), currentPage = Page.Game) }
 
-        update { it.resetToGame() }
+        // 2. await engine sync, 3. unlock, 4. trigger AI if needed
+        val et = if (st.reviewEngineTypeName.isNotEmpty())
+            engineTypeFromName(st.reviewEngineTypeName) else EngineType.KataGoCPU
+        viewModelScope.launch {
+            try {
+                syncEngineToBoard(et, st.reviewAiDifficulty, st.reviewSize, st.reviewKomi, st.reviewHandicap)
+                update { it.resetToGame() }
+                toast("${ctx.getString(R.string.toast_load_complete)}")
+                if (!goGame.state.value.gameOver && isAiTurn()) triggerAiMove()
+            } catch (e: Exception) {
+                update { it.copy(busyState = AppBusyState.Idle, busyMessage = "") }
+            }
+        }
     }
 
     // ── Engine sync ──

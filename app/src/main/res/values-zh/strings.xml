@@ -24,6 +24,7 @@
     <string name="btn_score">数子</string>
     <string name="btn_continue">返回</string>
     <string name="btn_end">结束</string>
+    <string name="evaluating">数子中…</string>
 
     <!-- Score Card -->
     <string name="score_black">黑 %1$s: %2$d子 + %3$d空 = %4$s</string>
@@ -107,7 +108,10 @@
     <string name="toast_save_failed">保存失败: %1$s</string>
     <string name="toast_ai_error">AI错误: %1$s</string>
     <string name="engine_starting">引擎启动中…</string>
+    <string name="loading_game">棋局加载中…</string>
     <string name="toast_ai_start_failed">AI引擎启动失败: %1$s</string>
+    <string name="toast_load_complete">棋局加载完成</string>
+    <string name="toast_gpu_tuning_complete">GPU调优已完成</string>
     <string name="toast_ai_not_ready">AI引擎未启动</string>
 
     <!-- End Game Dialog -->

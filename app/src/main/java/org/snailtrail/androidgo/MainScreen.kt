@@ -36,12 +36,9 @@ import org.snailtrail.androidgo.game.TerritoryScore
 @Composable
 fun BottomBar(
     gameOver: Boolean,
-    aiThinking: Boolean,
-    engineInitializing: Boolean = false,
     hasMoves: Boolean,
     showMoveNumbers: Boolean = false,
     showScore: Boolean = false,
-    scoringInFlight: Boolean = false,
     onPass: () -> Unit,
     onUndo: () -> Unit,
     onToggleMoveNumbers: () -> Unit,
@@ -55,17 +52,17 @@ fun BottomBar(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Button(
-            onClick = onPass, enabled = !gameOver && !aiThinking && !engineInitializing && !showScore,
+            onClick = onPass, enabled = !gameOver && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_pass), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onUndo, enabled = hasMoves && !gameOver && !aiThinking && !engineInitializing && !showScore,
+            onClick = onUndo, enabled = hasMoves && !gameOver && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_undo), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onToggleMoveNumbers, enabled = hasMoves && !aiThinking && !engineInitializing,
+            onClick = onToggleMoveNumbers, enabled = hasMoves,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
             colors = if (showMoveNumbers) ButtonDefaults.buttonColors(
@@ -73,12 +70,12 @@ fun BottomBar(
             ) else ButtonDefaults.buttonColors()
         ) { Text(stringResource(R.string.btn_move_numbers), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onScore, enabled = hasMoves && !aiThinking && !engineInitializing && !scoringInFlight,
+            onClick = onScore, enabled = hasMoves,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(if (showScore) R.string.btn_continue else R.string.btn_score), fontSize = 12.sp, maxLines = 1) }
         Button(
-            onClick = onEnd, enabled = !gameOver && !aiThinking && !engineInitializing && !showScore,
+            onClick = onEnd, enabled = !gameOver && !showScore,
             modifier = Modifier.defaultMinSize(minWidth = 0.dp, minHeight = 32.dp),
             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
         ) { Text(stringResource(R.string.btn_end), fontSize = 12.sp, maxLines = 1) }
