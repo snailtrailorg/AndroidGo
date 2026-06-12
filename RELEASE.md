@@ -20,6 +20,9 @@ v<主版本>.<次版本>.<修订>
 
 ## [Unreleased]
 
+### 优化
+- **KataGo GPU FP16**: `useFP16 = auto`，Adreno 740 上 9路 genmove 提速约 21%（13.8s→10.9s，难度1）；`useFP16 = true` 强制开 tensor core 在 Adreno 上会卡死，不可用；`numSearchThreads=4 + nnMaxBatchSize=4` 反而因发热降频变慢
+
 ---
 
 ## v2.0.0 (2026-06-11)
