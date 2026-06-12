@@ -239,58 +239,44 @@ fun AndroidGoScreen(
                     showMoveNumbers = state.showMoveNumbers
                 )
 
-                if (busy == AppBusyState.Initializing) {
-                    val isGpuTuning = !state.gpuTuningCompleted &&
+                // Unified busy overlay: blocks input during Initializing / AiThinking / Evaluating
+                if (busy == AppBusyState.Initializing || busy == AppBusyState.AiThinking || busy == AppBusyState.Evaluating) {
+                    val isGpuTuning = busy == AppBusyState.Initializing &&
+                        !state.gpuTuningCompleted &&
                         (state.blackConfig.backend == ComputeBackend.GPU ||
                          state.whiteConfig.backend == ComputeBackend.GPU)
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.25f))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .background(Color.Black.copy(alpha = 0.25f))
+                            .pointerInput(busy) { /* consume all touches */ },
+                        contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = stringResource(
-                                if (isGpuTuning) R.string.engine_starting_gpu_tuning
-                                else R.string.engine_starting
-                            ),
-                            color = androidx.compose.ui.graphics.Color.White,
-                            fontSize = if (isGpuTuning) 12.sp else 14.sp,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                            textAlign = TextAlign.Center,
-                            lineHeight = if (isGpuTuning) 16.sp else 20.sp
-                        )
-                    }
-                }
-
-                if (busy == AppBusyState.AiThinking) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(1f)
-                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.15f))
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(stringResource(R.string.ai_thinking),
-                            color = androidx.compose.ui.graphics.Color.White, fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 8.dp))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp), strokeWidth = 3.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = stringResource(
+                                    when {
+                                        isGpuTuning -> R.string.engine_starting_gpu_tuning
+                                        busy == AppBusyState.Initializing -> R.string.engine_starting
+                                        busy == AppBusyState.AiThinking -> R.string.ai_thinking
+                                        else -> R.string.btn_score  /* Evaluating */
+                                    }
+                                ),
+                                color = Color.White, fontSize = 14.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // Score card: spinner while evaluating; result card when done
-            if (state.showScore && state.currentEval == null && state.currentScore == null && busy == AppBusyState.Evaluating) {
-                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                }
-            } else if (state.showScore && (state.currentScore != null || state.currentEval != null)) {
+            // Score card: result card when done
+            if (state.showScore && (state.currentScore != null || state.currentEval != null)) {
                 EvalScoreCard(
                     score = state.currentScore,
                     eval = state.currentEval,
