@@ -20,12 +20,9 @@ v<主版本>.<次版本>.<修订>
 
 ## [Unreleased]
 
-### 优化
-- **KataGo GPU FP16**: `useFP16 = auto`，Adreno 740 上 9路 genmove 提速约 21%（13.8s→10.9s，难度1）；`useFP16 = true` 强制开 tensor core 在 Adreno 上会卡死，不可用；`numSearchThreads=4 + nnMaxBatchSize=4` 反而因发热降频变慢
-
 ---
 
-## v2.0.0 (2026-06-11)
+## v2.0.0 (2026-06-17)
 
 Google Play 发布准备 + 首次用户体验全面优化。
 
@@ -56,6 +53,10 @@ Google Play 发布准备 + 首次用户体验全面优化。
 ### 架构
 - `UiState.resetToGame()`: 数据拥有自己的状态变换
 - `vm.init()`: 统一解析 prefs，消除 loadConfigFromPrefs 中间层
+
+### 优化
+- **KataGo GPU FP16**: `useFP16 = auto`，Adreno 740 上 9路 genmove 提速约 21%（13.8s→10.9s，难度1）；`useFP16 = true` 强制开 tensor core 在 Adreno 上会卡死，不可用；`numSearchThreads=4 + nnMaxBatchSize=4` 反而因发热降频变慢
+- **导入图标**: 修正箭头方向，更清晰表示"导入到内部"
 
 ---
 
