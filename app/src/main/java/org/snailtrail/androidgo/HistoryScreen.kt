@@ -72,17 +72,17 @@ private data class SgfEntry(
 @Composable
 fun HistoryScreen(
     sgfDir: File,
+    refreshTrigger: Int = 0,
     onLoad: (ParsedSgf, File) -> Unit,
     onReview: (ParsedSgf) -> Unit,
     onDelete: (File) -> Unit,
     onShare: (File) -> Unit,
-    onImport: () -> Unit,
     onBack: () -> Unit
 ) {
     BackHandler(onBack = onBack)
 
     var refreshKey by remember { mutableIntStateOf(0) }
-    val entries = remember(refreshKey) {
+    val entries = remember(refreshKey + refreshTrigger) {
         val list = mutableListOf<SgfEntry>()
         sgfDir.mkdirs()
         sgfDir.listFiles()?.filter { it.extension.equals("sgf", ignoreCase = true) }
@@ -133,11 +133,6 @@ fun HistoryScreen(
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f).padding(start = 4.dp)
                 )
-                IconButton(onClick = onImport, modifier = Modifier.size(36.dp)) {
-                    Icon(painterResource(R.drawable.ic_import),
-                        contentDescription = stringResource(R.string.history_import),
-                        modifier = Modifier.size(30.dp))
-                }
                 IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                     Icon(painterResource(R.drawable.ic_back),
                         contentDescription = stringResource(R.string.history_back),

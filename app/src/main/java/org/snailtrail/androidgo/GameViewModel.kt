@@ -466,7 +466,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 onGtp { engineManager.close() }
                 val aiPlayer = if (config.blackPlayer.role == PlayerRole.AI) config.blackPlayer else config.whitePlayer
                 val engKomi = if (config.handicap > 0) config.handicap / 2f else 3.75f
-                initAiEngine(aiPlayer, config.boardSize, engKomi)
+                initAiEngine(aiPlayer, config.boardSize, engKomi, config.handicap)
 
                 if (aiPlayer.backend == ComputeBackend.GPU && !currentState().gpuTuningCompleted) {
                     toast("${ctx.getString(R.string.toast_gpu_tuning_complete)}")
@@ -489,7 +489,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // Only one coroutine ever calls this: either startNewGame or triggerAiMove.
     // The app does not support AI-vs-AI, so there is no concurrent init scenario.
     // See memory: [[no-ai-vs-ai]]
-    private suspend fun initAiEngine(aiPlayer: PlayerConfig, boardSize: Int, komi: Float) {
+    private suspend fun initAiEngine(aiPlayer: PlayerConfig, boardSize: Int, komi: Float, handicap: Int = 0) {
         if (aiEngineReady.get()) return
 
         val engineType = when {
@@ -499,6 +499,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         onGtp { engineManager.ensureEngine(engineType, aiPlayer.difficulty, aiPlayer.backend) }
         onGtp { engineManager.engineInit(boardSize, komi) }
+        // Set handicap after clear_board — GTP fixed_handicap handles stone placement + turn
+        if (handicap > 0) {
+            onGtp { engineManager.setHandicap(handicap) }
+        }
 
         // Mark GPU tuning as complete after first successful init
         if (aiPlayer.backend == ComputeBackend.GPU && !currentState().gpuTuningCompleted) {
@@ -507,10 +511,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             update { it.copy(gpuTuningCompleted = true) }
         }
 
-        val stones = goGame.state.value.stones
-        for ((pos, color) in stones) {
-            val (row, col) = pos
-            onGtp { engineManager.playMove(row, col, color == StoneColor.Black) }
+        // Sync via moveHistory (ordered, alternates correctly) instead of
+        // stones map (unordered) — prevents GTP play alternation errors.
+        for (move in goGame.state.value.moveHistory) {
+            onGtp { engineManager.playMove(move.stone.row, move.stone.col,
+                move.stone.color == StoneColor.Black) }
         }
         aiEngineReady.set(true)
     }
@@ -535,7 +540,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val justInitialized = !aiEngineReady.get()
                 if (justInitialized) {
                     val aiPlayer = if (st.currentPlayer == StoneColor.Black) currentState().blackConfig else currentState().whiteConfig
-                    onGtp { initAiEngine(aiPlayer, st.size, st.komi) }
+                    onGtp { initAiEngine(aiPlayer, st.size, st.komi, st.handicap) }
                 }
 
                 if (!justInitialized) {

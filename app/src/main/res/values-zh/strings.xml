@@ -94,9 +94,6 @@
     <string name="history_entry_desc">%1$s · %2$s</string>
     <string name="history_share">分享</string>
     <string name="history_delete">删除</string>
-    <string name="history_import">导入</string>
-    <string name="toast_imported">已导入 %1$d 个棋谱</string>
-    <string name="toast_import_failed">导入失败</string>
     <string name="toast_file_not_found">文件不存在</string>
     <string name="toast_invalid_sgf">不是有效的 SGF 文件</string>
     <string name="history_load">加载</string>

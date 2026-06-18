@@ -40,6 +40,11 @@ Google Play 发布准备 + 首次用户体验全面优化。
 - **终局加载无法数子**: 两连 pass 同步到引擎 + busyState 状态重置
 - **复盘加载无法数子**: `loadFromReview` 补引擎同步，提取 `syncEngineToBoard()` 统一入口
 - **布局满屏**: 删除双重 statusBarsPadding
+- **历史列表删除后不刷新**: 加 `refreshTrigger`，删除立刻更新
+- **`initAiEngine` 无序 stones 迭代**: 改 `moveHistory` 有序迭代 + 传 `handicap` 给引擎
+
+### 弃用
+- **移除 SGF 导入功能**: 移动端场景不需要导入外部棋谱；删除导入按钮、SAF 选择器、导入 Toast、相关 strings 和 icon
 
 ### 优化
 - **标题栏**: 图标 30dp，容器 36dp，三页面统一
